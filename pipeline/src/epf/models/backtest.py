@@ -17,7 +17,7 @@ import numpy as np
 import pandas as pd
 
 from epf.features.build import feature_columns
-from epf.models import lgbm
+from epf.models import calibrate, lgbm
 from epf.models.metrics import block_bootstrap_mae_diff, coverage, mae, pinball, rmse, smape
 from epf.timeutil import utcnow
 
@@ -59,8 +59,15 @@ def walk_forward(data: pd.DataFrame, start: date, end: date) -> tuple[pd.DataFra
         log.info(
             "train through %s (%d rows), test %s", train["delivery_date"].max(), len(train), month
         )
+        fit_rows, holdout = calibrate.holdout_split(train, month)
+        adjustments = calibrate.fit(
+            holdout, lgbm.train(fit_rows, fit_rows["y"], features).predict(holdout)
+        )
         model = lgbm.train(train, train["y"], features)
-        predicted = model.predict(test)
+        raw = model.predict(test)
+        predicted = calibrate.apply(raw, test["hour"], adjustments)
+        predicted["p10_raw"] = raw["p10"]
+        predicted["p90_raw"] = raw["p90"]
         predicted["trained_through"] = train["delivery_date"].max()
         frames.append(
             pd.concat([test[["delivery_date", "valid_from_utc", "hour", "y"]], predicted], axis=1)
@@ -190,6 +197,15 @@ def build_report(
         "n_features": n_features,
         "params": {k: v for k, v in lgbm.PARAMS.items() if k not in {"n_jobs", "verbose"}},
         "overall": score(p),
+        "calibration": {
+            "method": "conformalized quantile regression by Berlin hour",
+            "holdout_days": calibrate.HOLDOUT_DAYS,
+            "note": "Added after the first backtest. P50 is unaffected.",
+            "coverage_before": coverage(
+                p["y"].to_numpy(float), p["p10_raw"].to_numpy(float), p["p90_raw"].to_numpy(float)
+            ),
+            "width_before": float((p["p90_raw"] - p["p10_raw"]).mean()),
+        },
         "significance": significance,
         "by_regime": {k: score(p[m]) for k, m in regimes(p).items()},
         "by_hour": {str(h): score(g) for h, g in p.groupby("hour")},

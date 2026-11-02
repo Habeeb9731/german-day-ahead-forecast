@@ -4,14 +4,14 @@ from __future__ import annotations
 
 import json
 from dataclasses import dataclass
-from datetime import date
+from datetime import date, timedelta
 from pathlib import Path
 
 import lightgbm as lgb
 import numpy as np
 import pandas as pd
 
-from epf.models import lgbm
+from epf.models import calibrate, lgbm
 
 
 @dataclass(frozen=True)
@@ -20,12 +20,14 @@ class LiveModel:
     trained_through: date
     features: list[str]
     boosters: dict[float, lgb.Booster]
+    adjustments: dict[str, float]
 
     def predict(self, x: pd.DataFrame) -> pd.DataFrame:
         """P10, P50 and P90, sorted because separately fitted quantiles can cross."""
         raw = np.column_stack([self.boosters[q].predict(x[self.features]) for q in lgbm.QUANTILES])
         raw.sort(axis=1)
-        return pd.DataFrame(raw, columns=["p10", "p50", "p90"], index=x.index)
+        predicted = pd.DataFrame(raw, columns=["p10", "p50", "p90"], index=x.index)
+        return calibrate.apply(predicted, x["hour"], self.adjustments)
 
 
 def train_and_save(data: pd.DataFrame, features: list[str], root: Path) -> Path:
@@ -33,6 +35,11 @@ def train_and_save(data: pd.DataFrame, features: list[str], root: Path) -> Path:
     known = data.dropna(subset=["y"])
     trained_through: date = known["delivery_date"].max()
     version = f"{lgbm.model_version(features)}@{trained_through.isoformat()}"
+    next_day = trained_through + timedelta(days=1)
+    fit_rows, holdout = calibrate.holdout_split(known, next_day)
+    adjustments = calibrate.fit(
+        holdout, lgbm.train(fit_rows, fit_rows["y"], features).predict(holdout)
+    )
     model = lgbm.train(known, known["y"], features)
     out = root / version
     out.mkdir(parents=True, exist_ok=True)
@@ -45,6 +52,7 @@ def train_and_save(data: pd.DataFrame, features: list[str], root: Path) -> Path:
                 "trained_through": trained_through.isoformat(),
                 "features": features,
                 "rows": len(known),
+                "calibration": adjustments,
             },
             indent=1,
         )
@@ -68,4 +76,5 @@ def load_latest(root: Path) -> LiveModel | None:
         date.fromisoformat(newest["trained_through"]),
         newest["features"],
         boosters,
+        newest["calibration"],
     )

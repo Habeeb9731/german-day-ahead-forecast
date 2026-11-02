@@ -12,7 +12,7 @@ from epf.config import SERIES_BY_ID, WEATHER_LOCATIONS, WEATHER_VARIABLES
 from epf.features.asof import DataStore
 from epf.features.build import build_day, feature_columns
 from epf.live import daily, export, forecast_log, score
-from epf.models import artifact, lgbm
+from epf.models import artifact, calibrate, lgbm
 from epf.timeutil import delivery_bounds_utc
 
 DELIVERY = date(2026, 6, 17)
@@ -70,10 +70,11 @@ def store(parts):
 @pytest.fixture(scope="module")
 def model(store, tmp_path_factory):
     with pytest.MonkeyPatch.context() as mp:
+        mp.setattr(calibrate, "HOLDOUT_DAYS", 7)
         mp.setattr(
             lgbm, "PARAMS", {**lgbm.PARAMS, "n_estimators": 10, "min_child_samples": 5, "n_jobs": 2}
         )
-        frames = [build_day(store, date(2026, 5, 15) + timedelta(days=i)) for i in range(20)]
+        frames = [build_day(store, date(2026, 5, 11) + timedelta(days=i)) for i in range(24)]
         data = pd.concat(frames, ignore_index=True)
         data["y"] = rng.uniform(10, 90, len(data))
         root = tmp_path_factory.mktemp("models")
@@ -282,3 +283,4 @@ def test_saved_model_predicts_same_as_loaded(store, model):
     out = model.predict(features)
     assert (out["p10"] <= out["p50"]).all() and (out["p50"] <= out["p90"]).all()
     assert model.trained_through == date(2026, 6, 3)
+    assert "all" in model.adjustments

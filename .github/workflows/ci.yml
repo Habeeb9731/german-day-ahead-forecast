@@ -25,6 +25,18 @@ jobs:
         run: uv run mypy
       - name: Tests
         run: uv run pytest -m "not live"
+      - name: Forecast log is intact
+        run: uv run epf verify-log
+      - name: Forecast log is append-only
+        if: github.event_name == 'push' && github.event.before != '0000000000000000000000000000000000000000'
+        working-directory: .
+        run: |
+          git fetch --quiet --depth=1 origin "${{ github.event.before }}"
+          changed=$(git diff --name-only --diff-filter=MDR FETCH_HEAD HEAD -- data/forecast_log)
+          if [ -n "$changed" ]; then
+            echo "Logged forecasts must never change:" "$changed"
+            exit 1
+          fi
 
   dashboard:
     runs-on: ubuntu-latest

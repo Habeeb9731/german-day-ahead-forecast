@@ -67,6 +67,14 @@ export interface BacktestFile {
   n_features: number;
   days_scored: number;
   overall: ScoreSet;
+  /** How the model's P10-P90 range was calibrated, with its raw coverage for comparison. */
+  calibration?: {
+    method: string;
+    holdout_days: number;
+    note: string;
+    coverage_before: number;
+    width_before: number;
+  };
   significance: Record<"baseline_prev_day" | "baseline_prev_week", Significance>;
   by_regime: Record<string, ScoreSet>;
   by_hour: Record<string, ScoreSet>;

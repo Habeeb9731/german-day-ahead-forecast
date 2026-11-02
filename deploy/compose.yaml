@@ -1,0 +1,23 @@
+# Production on the Hetzner server. The web container binds to loopback only: public traffic
+# arrives through the Cloudflare Tunnel (depower.abdulhabeeb.com -> http://localhost:3002).
+name: depower
+
+services:
+  web:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile.web
+    container_name: depower-web
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:3002:80"
+    volumes:
+      - ../data/public:/usr/share/nginx/html/data:ro
+
+  pipeline:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile.pipeline
+    profiles: ["jobs"]
+    volumes:
+      - ../data:/app/data

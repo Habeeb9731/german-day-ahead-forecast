@@ -1,0 +1,11 @@
+[Unit]
+Description=Score earlier forecasts once prices are published
+
+[Timer]
+OnCalendar=*-*-* 14:05:00 Europe/Berlin
+OnCalendar=*-*-* 20:35:00 Europe/Berlin
+Persistent=true
+AccuracySec=1min
+
+[Install]
+WantedBy=timers.target

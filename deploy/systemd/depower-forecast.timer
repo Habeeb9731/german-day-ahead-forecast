@@ -1,0 +1,14 @@
+[Unit]
+Description=Forecast tomorrow's prices before the 11:30 Berlin cutoff
+
+[Timer]
+# Retries are safe because a logged day is never redone. The 11:35 run records a missed day.
+OnCalendar=*-*-* 10:20:00 Europe/Berlin
+OnCalendar=*-*-* 10:45:00 Europe/Berlin
+OnCalendar=*-*-* 11:10:00 Europe/Berlin
+OnCalendar=*-*-* 11:35:00 Europe/Berlin
+Persistent=false
+AccuracySec=30s
+
+[Install]
+WantedBy=timers.target

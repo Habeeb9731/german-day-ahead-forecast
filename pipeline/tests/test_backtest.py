@@ -54,6 +54,12 @@ def run():
     return data, backtest.baseline_intervals(data, predictions), importance, version
 
 
+def test_calibration_keeps_raw_range_for_reporting(run):
+    _, predictions, _, _ = run
+    assert {"p10_raw", "p90_raw"} <= set(predictions.columns)
+    assert predictions[["p10_raw", "p90_raw"]].notna().all().all()
+
+
 def test_training_never_includes_test_period(run):
     _, predictions, _, _ = run
     assert (predictions["trained_through"] < predictions["delivery_date"]).all()

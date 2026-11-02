@@ -1,0 +1,15 @@
+.git
+.github
+data
+**/node_modules
+**/.venv
+**/__pycache__
+**/.pytest_cache
+**/.ruff_cache
+**/.mypy_cache
+dashboard/.next
+dashboard/out
+dashboard/public/data
+dashboard/sample-data
+**/.DS_Store
+**/.env

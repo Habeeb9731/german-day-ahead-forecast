@@ -183,6 +183,14 @@ export function ModelView() {
             their ranges come from their own errors over the previous 90 days. sMAPE is unstable when
             prices are near zero, so read it alongside MAE.
           </p>
+          {d.calibration && (
+            <p className="text-sm text-muted-foreground">
+              The model&apos;s raw P10–P90 range covered only {fmt(d.calibration.coverage_before, 1)}% of
+              prices, so each month it is recalibrated using errors from the previous{" "}
+              {d.calibration.holdout_days} days. The method was added after seeing that first result, so
+              the calibrated coverage above may be slightly flattering. It does not change P50 or MAE.
+            </p>
+          )}
           <div className="grid gap-3 md:grid-cols-2">
             <Verdict name="baseline_prev_day" s={d.significance.baseline_prev_day} />
             <Verdict name="baseline_prev_week" s={d.significance.baseline_prev_week} />

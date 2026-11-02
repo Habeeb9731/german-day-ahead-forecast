@@ -1,0 +1,9 @@
+FROM python:3.12-slim
+# LightGBM needs the OpenMP runtime.
+RUN apt-get update && apt-get install -y --no-install-recommends libgomp1 && rm -rf /var/lib/apt/lists/*
+RUN pip install --no-cache-dir "uv==0.8.*"
+WORKDIR /app/pipeline
+COPY pipeline/pyproject.toml pipeline/uv.lock ./
+COPY pipeline/src ./src
+RUN uv sync --frozen --no-dev
+ENV PATH="/app/pipeline/.venv/bin:$PATH" EPF_DATA_DIR=/app/data EPF_EXPORT_DIR=/app/data/public
