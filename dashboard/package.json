@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "next dev",
     "sample": "node scripts/generate-sample-data.mjs && cp sample-data/*.json public/data/",
-    "prebuild": "node scripts/check-data.mjs",
+    "prebuild": "node scripts/check-data.mjs && rm -rf .next",
     "build": "next build",
     "lint": "eslint",
     "typecheck": "tsc --noEmit",

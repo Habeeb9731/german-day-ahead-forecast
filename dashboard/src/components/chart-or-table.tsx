@@ -13,7 +13,7 @@ export function ChartOrTable({
   label: string;
 }) {
   return (
-    <Tabs defaultValue="chart" className="min-w-0">
+    <Tabs defaultValue="chart" className="min-w-0 gap-3">
       <TabsList aria-label={`${label}: choose a view`}>
         <TabsTrigger value="chart">Chart</TabsTrigger>
         <TabsTrigger value="table">Table</TabsTrigger>
@@ -23,7 +23,7 @@ export function ChartOrTable({
       </TabsContent>
       <TabsContent value="table" className="min-w-0">
         <div
-          className="max-h-96 overflow-auto rounded-md border"
+          className="max-h-96 overflow-auto rounded-2xl border"
           tabIndex={0}
           role="region"
           aria-label={`${label}, data table`}

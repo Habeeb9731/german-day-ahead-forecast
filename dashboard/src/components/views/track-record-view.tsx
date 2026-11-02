@@ -14,6 +14,7 @@ import {
   SampleBanner,
   StaleBanner,
 } from "@/components/page-states";
+import { StatCard } from "@/components/stat-card";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -44,7 +45,7 @@ function toIso(d: Date): string {
 
 function Shell({ children }: { children: React.ReactNode }) {
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <PageHeader title="Track record">
         Live forecasts scored against published prices. Backtest results are kept separately on the
         Model page.
@@ -110,8 +111,15 @@ function Loaded({ data }: { data: TrackRecordFile }) {
     ? inRange.reduce((s, h) => s + Math.abs(h.actual - h.p50), 0) / inRange.length
     : null;
 
+  const baselineMae = (key: "baseline_prev_day" | "baseline_prev_week") => {
+    const rows = inRange.filter((h) => h[key] !== null);
+    return rows.length
+      ? rows.reduce((s, h) => s + Math.abs(h.actual - (h[key] as number)), 0) / rows.length
+      : null;
+  };
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {data.is_sample && <SampleBanner />}
       {generatedDaysAgo > STALE_AFTER_DAYS && (
         <StaleBanner>
@@ -156,6 +164,12 @@ function Loaded({ data }: { data: TrackRecordFile }) {
             />
           </PopoverContent>
         </Popover>
+      </div>
+
+      <div className="grid gap-4 sm:grid-cols-3">
+        <StatCard accent label={`Model MAE, ${daily.length} days`} value={fmt(rangeMae)} unit="EUR/MWh" />
+        <StatCard label={MODEL_LABELS.baseline_prev_day} value={fmt(baselineMae("baseline_prev_day"))} unit="EUR/MWh" />
+        <StatCard label={MODEL_LABELS.baseline_prev_week} value={fmt(baselineMae("baseline_prev_week"))} unit="EUR/MWh" />
       </div>
 
       <Card>

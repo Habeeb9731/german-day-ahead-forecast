@@ -12,6 +12,7 @@ import {
   PageHeader,
   SampleBanner,
 } from "@/components/page-states";
+import { StatCard } from "@/components/stat-card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -36,7 +37,7 @@ const SERIES = [
 
 function Shell({ children }: { children: React.ReactNode }) {
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <PageHeader title="Model">
         How the model works, how it performed in a backtest, and where it falls short.
       </PageHeader>
@@ -128,6 +129,18 @@ export function ModelView() {
   return (
     <Shell>
       {d.is_sample && <SampleBanner />}
+      <div className="grid gap-4 sm:grid-cols-3">
+        {MODELS.map((m) => (
+          <StatCard
+            key={m}
+            accent={m === "model"}
+            label={`${MODEL_LABELS[m]}, MAE`}
+            value={fmt(d.overall[m]?.mae)}
+            unit="EUR/MWh"
+            detail={`P10–P90 coverage ${fmt(d.overall[m]?.coverage_p10_p90, 1)}% (target 80%)`}
+          />
+        ))}
+      </div>
       <Card>
         <CardHeader>
           <CardTitle>Backtest results</CardTitle>
@@ -177,7 +190,7 @@ export function ModelView() {
         </CardContent>
       </Card>
 
-      <div className="grid gap-6 lg:grid-cols-2">
+      <div className="grid gap-4 lg:grid-cols-2">
         <Card className="min-w-0">
           <CardHeader>
             <CardTitle>MAE by hour of day</CardTitle>
@@ -288,7 +301,7 @@ export function ModelView() {
 
 function Explanation() {
   return (
-    <div className="grid gap-6 lg:grid-cols-2">
+    <div className="grid gap-4 lg:grid-cols-2">
       <Card className="min-w-0">
         <CardHeader>
           <CardTitle>How it works</CardTitle>

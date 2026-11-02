@@ -16,7 +16,7 @@ import { hourLabel } from "@/lib/time";
 import type { ForecastHour } from "@/lib/types";
 
 const config = {
-  band: { label: "P10–P90 range", color: "var(--chart-1)" },
+  band: { label: "P10–P90 range", color: "var(--accent)" },
   p50: { label: "Forecast (P50)", color: "var(--chart-1)" },
 } satisfies ChartConfig;
 
@@ -57,7 +57,7 @@ export function ForecastChart({ hours }: { hours: ForecastHour[] }) {
           dataKey="band"
           type="step"
           fill="var(--color-band)"
-          fillOpacity={0.2}
+          className="[&_path]:[fill-opacity:0.55] dark:[&_path]:[fill-opacity:0.2]"
           stroke="none"
           isAnimationActive={false}
         />

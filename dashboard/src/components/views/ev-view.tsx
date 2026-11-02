@@ -56,7 +56,7 @@ function Disclaimer() {
 
 function Shell({ children }: { children: React.ReactNode }) {
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <PageHeader title="EV charging">
         Find the cheapest hours to charge tomorrow, and compare them with plugging in at 18:00.
       </PageHeader>
@@ -110,7 +110,7 @@ function Calculator({ data, hours }: { data: TomorrowFile; hours: ForecastHour[]
 
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {data.is_sample && <SampleBanner />}
       {stale && (
         <StaleBanner>
@@ -126,7 +126,7 @@ function Calculator({ data, hours }: { data: TomorrowFile; hours: ForecastHour[]
             so the plug-in window has to fall within this day.
           </CardDescription>
         </CardHeader>
-        <CardContent className="grid gap-6 md:grid-cols-2">
+        <CardContent className="grid gap-6 md:grid-cols-2 xl:grid-cols-4">
           <div className="space-y-3">
             <Label htmlFor="energy">Energy needed (kWh)</Label>
             <Input
@@ -222,6 +222,7 @@ function Calculator({ data, hours }: { data: TomorrowFile; hours: ForecastHour[]
               }
             />
             <StatCard
+              accent
               label="Estimated saving"
               value={eur(result.savingsEur)}
               detail={

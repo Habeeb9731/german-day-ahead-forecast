@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Geist, Geist_Mono, Outfit } from "next/font/google";
 import type { ReactNode } from "react";
 
 import { SiteHeader } from "@/components/site-header";
@@ -8,6 +8,7 @@ import "./globals.css";
 
 const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
 const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
+const outfit = Outfit({ variable: "--font-outfit", subsets: ["latin"] });
 
 export const metadata: Metadata = {
   title: { default: "DE-LU day-ahead forecast", template: "%s | DE-LU day-ahead forecast" },
@@ -19,7 +20,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
     <html
       lang="en"
       suppressHydrationWarning
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${geistSans.variable} ${geistMono.variable} ${outfit.variable} h-full antialiased`}
     >
       <body className="flex min-h-full flex-col overflow-x-clip bg-background text-foreground">
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
@@ -30,10 +31,10 @@ export default function RootLayout({ children }: { children: ReactNode }) {
             Skip to content
           </a>
           <SiteHeader />
-          <main id="main" tabIndex={-1} className="w-full flex-1 px-4 py-6 outline-none lg:px-6">
+          <main id="main" tabIndex={-1} className="w-full flex-1 px-4 py-4 outline-none lg:px-6">
             {children}
           </main>
-          <footer className="border-t">
+          <footer>
             <div className="w-full space-y-1 px-4 py-4 text-xs text-muted-foreground lg:px-6">
               <p>
                 Market data: Bundesnetzagentur | SMARD.de (CC BY 4.0). Weather data by{" "}

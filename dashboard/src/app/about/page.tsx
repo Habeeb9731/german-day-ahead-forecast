@@ -17,7 +17,7 @@ function Ext({ href, children }: { href: string; children: React.ReactNode }) {
 
 export default function AboutPage() {
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <PageHeader title="About">Where the data comes from, how forecasts are made, and their limits.</PageHeader>
       <Alert>
         <AlertTitle>Not financial advice</AlertTitle>
@@ -26,7 +26,7 @@ export default function AboutPage() {
           Do not rely on them for trading, purchasing or any other financial decision.
         </AlertDescription>
       </Alert>
-      <div className="grid gap-6 lg:grid-cols-2">
+      <div className="grid gap-4 lg:grid-cols-2">
         <Card className="min-w-0">
           <CardHeader><CardTitle>Data sources and attribution</CardTitle></CardHeader>
           <CardContent className="space-y-3 text-sm">

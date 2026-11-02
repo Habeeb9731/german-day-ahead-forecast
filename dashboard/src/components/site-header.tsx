@@ -33,9 +33,9 @@ function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
       <Button
         key={link.href}
         asChild
-        variant={active ? "secondary" : "ghost"}
-        size="sm"
-        className="justify-start"
+        variant="ghost"
+        size="default"
+        className={active ? "justify-start bg-accent! text-accent-foreground!" : "justify-start text-muted-foreground"}
       >
         <Link href={link.href} aria-current={active ? "page" : undefined} onClick={onNavigate}>
           {link.label}
@@ -48,11 +48,15 @@ function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
 export function SiteHeader() {
   const [open, setOpen] = useState(false);
   return (
-    <header className="sticky top-0 z-40 border-b bg-background">
-      <div className="flex h-14 w-full items-center justify-between gap-2 px-4 lg:px-6">
-        <Link href="/" className="flex min-w-0 items-center gap-2 text-sm font-semibold">
-          <Zap className="size-4 shrink-0" aria-hidden />
-          <span className="truncate">DE-LU day-ahead forecast</span>
+    <header className="sticky top-0 z-40 bg-background">
+      <div className="flex h-16 w-full items-center justify-between gap-2 px-4 lg:px-6">
+        <Link href="/" className="flex min-w-0 items-center gap-2.5">
+          <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-accent text-accent-foreground">
+            <Zap className="size-4" aria-hidden />
+          </span>
+          <span className="truncate font-heading text-lg font-medium">
+            DE-LU <span className="hidden sm:inline">day-ahead </span>forecast
+          </span>
         </Link>
         <nav aria-label="Main" className="hidden items-center gap-1 md:flex">
           <NavLinks />
@@ -61,7 +65,7 @@ export function SiteHeader() {
           <ModeToggle />
           <Sheet open={open} onOpenChange={setOpen}>
             <SheetTrigger asChild>
-              <Button variant="outline" size="icon" className="md:hidden" aria-label="Open menu">
+              <Button variant="secondary" size="icon" className="bg-card md:hidden" aria-label="Open menu">
                 <Menu className="size-4" />
               </Button>
             </SheetTrigger>

@@ -8,7 +8,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 export function PageHeader({ title, children }: { title: string; children?: ReactNode }) {
   return (
     <div className="space-y-1">
-      <h1 className="text-2xl font-semibold tracking-tight">{title}</h1>
+      <h1 className="font-heading text-3xl font-medium tracking-tight">{title}</h1>
       {children && <p className="text-sm text-muted-foreground">{children}</p>}
     </div>
   );
@@ -66,7 +66,7 @@ export function StaleBanner({ children }: { children: ReactNode }) {
 
 export function SampleBanner() {
   return (
-    <Alert>
+    <Alert className="border-chart-4">
       <FlaskConical aria-hidden />
       <AlertTitle>Sample data: not real prices or results</AlertTitle>
       <AlertDescription>
