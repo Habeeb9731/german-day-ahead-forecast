@@ -111,9 +111,10 @@ export function SiteHeader() {
         <nav
           ref={navRef}
           aria-label="Main"
-          className="pointer-events-auto relative isolate flex h-14 items-center gap-0.5 rounded-full border border-white/10 bg-foreground p-1.5 text-background shadow-lg sm:gap-1 dark:bg-card dark:text-foreground"
+          className="pointer-events-auto relative isolate flex h-14 items-center gap-0.5 rounded-full border border-white/15 bg-black p-1.5 text-white shadow-lg sm:gap-1"
         >
-          {/* Difference blending inverts each icon as the white indicator passes over it. */}
+          {/* Difference blending inverts each icon under the white indicator. The pill stays pure black
+              in both themes, because any tint would turn the white indicator off-white. */}
           <span
             ref={indicatorRef}
             aria-hidden
