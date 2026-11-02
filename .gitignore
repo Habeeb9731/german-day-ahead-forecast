@@ -3,6 +3,8 @@ data/*.duckdb*
 data/raw/
 data/clean/
 data/quality/
+# Row-level backtest output holds prices; report.json holds aggregates only.
+data/backtest/*.parquet
 .venv/
 __pycache__/
 *.pyc

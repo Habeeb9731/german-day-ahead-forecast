@@ -15,6 +15,7 @@ REPO_ROOT = Path(__file__).resolve().parents[3]
 DEFAULT_DB_PATH = REPO_ROOT / "data" / "epf.duckdb"
 AVAILABILITY_DIR = REPO_ROOT / "data" / "availability"
 QUALITY_DIR = REPO_ROOT / "data" / "quality"
+BACKTEST_DIR = REPO_ROOT / "data" / "backtest"
 
 
 def db_path() -> Path:
@@ -105,3 +106,12 @@ WEATHER_LOCATIONS: tuple[Location, ...] = (
     Location("karlsruhe", 49.0, 8.5),
     Location("munich", 48.0, 11.5),
 )
+
+# Forecast cutoff: Berlin wall-clock time on the day before delivery. The auction closes at 12:00.
+CUTOFF_LOCAL = (11, 30)
+# Live runs may start from this time. Earlier, the day's demand forecast may not be published yet.
+RUN_WINDOW_START_LOCAL = (10, 15)
+
+# Walk-forward backtest window: the most recent 12 complete months at build time.
+BACKTEST_START = "2025-11-01"
+BACKTEST_END = "2026-10-31"
