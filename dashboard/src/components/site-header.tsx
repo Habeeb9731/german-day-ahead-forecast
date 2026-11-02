@@ -111,10 +111,10 @@ export function SiteHeader() {
         <nav
           ref={navRef}
           aria-label="Main"
-          className="pointer-events-auto relative isolate flex h-14 items-center gap-0.5 rounded-full border border-black/10 bg-white p-1.5 text-black shadow-lg sm:gap-1 dark:border-white/15 dark:bg-black dark:text-white"
+          className="pointer-events-auto relative isolate flex h-14 items-center gap-0.5 rounded-full border border-white/15 bg-black p-1.5 text-white shadow-lg sm:gap-1"
         >
-          {/* Difference blending: on the white pill this white indicator renders black, and on the black
-              pill it renders white, inverting the icon either way. Any pill tint would discolour it. */}
+          {/* Difference blending inverts each icon under the white indicator. The pill stays pure black
+              in both themes, because any tint would turn the white indicator off-white. */}
           <span
             ref={indicatorRef}
             aria-hidden
@@ -133,7 +133,7 @@ export function SiteHeader() {
                       className={cn(
                         "flex size-11 items-center justify-center rounded-full transition-colors outline-none focus-visible:ring-2 focus-visible:ring-accent",
                         "[&>svg]:transition-transform [&>svg]:duration-350 [&>svg]:ease-[cubic-bezier(.34,1.8,.5,1)] hover:[&>svg]:-translate-y-0.5 hover:[&>svg]:scale-110 active:[&>svg]:scale-[.88] active:[&>svg]:duration-100 motion-reduce:[&>svg]:transition-none",
-                        !active && "hover:bg-black/5 dark:hover:bg-white/10",
+                        !active && "hover:bg-white/10",
                       )}
                     >
                       <Icon className="size-[18px]" aria-hidden />
@@ -144,7 +144,7 @@ export function SiteHeader() {
               );
             })}
           </TooltipProvider>
-          <Separator orientation="vertical" className="mx-1 h-6! self-center! bg-black/15 sm:mx-1.5 dark:bg-white/20" />
+          <Separator orientation="vertical" className="mx-1 h-6! self-center! bg-white/20 sm:mx-1.5" />
           <ModeToggle />
         </nav>
       </div>
