@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 from dataclasses import dataclass
 from typing import Any
 
@@ -23,14 +24,19 @@ PARAMS: dict[str, Any] = {
     "colsample_bytree": 0.8,
     "reg_lambda": 1.0,
     "random_state": 42,
-    "n_jobs": -1,
+    "deterministic": True,
+    "force_row_wise": True,
+    "n_jobs": min(4, os.cpu_count() or 1),  # more threads than this ran slower when tested
     "verbose": -1,
 }
+# Runtime settings that do not change the model's design, so they stay out of its version.
+RUNTIME_PARAMS = {"n_jobs", "verbose"}
 
 
 def model_version(features: list[str]) -> str:
     """Identifies the model design: changes to parameters or feature set change the version."""
-    payload = json.dumps({"params": PARAMS, "q": QUANTILES, "features": sorted(features)})
+    params = {k: v for k, v in PARAMS.items() if k not in RUNTIME_PARAMS}
+    payload = json.dumps({"params": params, "q": QUANTILES, "features": sorted(features)})
     return "lgbm-q-" + hashlib.sha256(payload.encode()).hexdigest()[:10]
 
 

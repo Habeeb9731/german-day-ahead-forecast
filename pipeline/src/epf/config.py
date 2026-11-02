@@ -12,10 +12,14 @@ from pathlib import Path
 from typing import Literal
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
-DEFAULT_DB_PATH = REPO_ROOT / "data" / "epf.duckdb"
-AVAILABILITY_DIR = REPO_ROOT / "data" / "availability"
-QUALITY_DIR = REPO_ROOT / "data" / "quality"
-BACKTEST_DIR = REPO_ROOT / "data" / "backtest"
+DATA_DIR = Path(os.environ.get("EPF_DATA_DIR", REPO_ROOT / "data"))
+DEFAULT_DB_PATH = DATA_DIR / "epf.duckdb"
+AVAILABILITY_DIR = DATA_DIR / "availability"
+QUALITY_DIR = DATA_DIR / "quality"
+BACKTEST_DIR = DATA_DIR / "backtest"
+FORECAST_LOG_DIR = DATA_DIR / "forecast_log"
+MODEL_DIR = DATA_DIR / "models"
+EXPORT_DIR = Path(os.environ.get("EPF_EXPORT_DIR", REPO_ROOT / "dashboard" / "public" / "data"))
 
 
 def db_path() -> Path:

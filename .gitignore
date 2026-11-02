@@ -3,6 +3,7 @@ data/*.duckdb*
 data/raw/
 data/clean/
 data/quality/
+data/models/
 # Row-level backtest output holds prices; report.json holds aggregates only.
 data/backtest/*.parquet
 .venv/

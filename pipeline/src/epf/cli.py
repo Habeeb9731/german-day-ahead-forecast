@@ -18,6 +18,9 @@ from epf.config import (
     BACKTEST_END,
     BACKTEST_START,
     DEFAULT_SINCE,
+    EXPORT_DIR,
+    FORECAST_LOG_DIR,
+    MODEL_DIR,
     QUALITY_DIR,
     SERIES,
     WEATHER_ARCHIVE_START,
@@ -27,7 +30,8 @@ from epf.features.asof import DataStore
 from epf.features.build import build_range, feature_columns
 from epf.ingest import availability, holidays_de, openmeteo, smard
 from epf.ingest.http import make_client
-from epf.models import backtest
+from epf.live import daily, export, forecast_log, score
+from epf.models import artifact, backtest
 from epf.quality.checks import run_checks, write_report
 from epf.timeutil import utcnow
 
@@ -180,6 +184,110 @@ def cmd_backtest(args: argparse.Namespace) -> int:
     return 0
 
 
+RETRAIN_AFTER_DAYS = 31
+
+
+def _ingest_recent(con: duckdb.DuckDBPyConnection, now: datetime) -> None:
+    """Fetch the latest SMARD chunks and the weather run needed for tomorrow's forecast."""
+    with make_client() as client:
+        for series in SERIES:
+            default = DEFAULT_SINCE["price" if series.kind == "da_price" else "other"]
+            smard.ingest_series(con, client, series, _day(default))
+        midnight = now.replace(hour=0, minute=0, second=0, microsecond=0)
+        openmeteo.backfill(con, client, midnight - timedelta(days=3), midnight, spacing=1.0)
+    holidays_de.ingest(con, range(2018, now.year + 2))
+    for series in SERIES:
+        build_series(con, series)
+    build_weather(con)
+
+
+def _rebuild_features(con: duckdb.DuckDBPyConnection, store: DataStore, now: datetime) -> None:
+    first = date.fromisoformat(WEATHER_ARCHIVE_START) + timedelta(days=1)
+    df = build_range(store, _delivery_days(first, now.date()))
+    df["delivery_date"] = pd.to_datetime(df["delivery_date"])
+    con.register("df_features", df)
+    con.execute("CREATE OR REPLACE TABLE features AS SELECT * FROM df_features")
+    con.unregister("df_features")
+
+
+def _ensure_model(
+    con: duckdb.DuckDBPyConnection, store: DataStore, now: datetime
+) -> artifact.LiveModel:
+    """Retrain monthly, on prices already published. Live models use every completed day."""
+    model = artifact.load_latest(MODEL_DIR)
+    if model and (now.date() - model.trained_through).days <= RETRAIN_AFTER_DAYS:
+        return model
+    logging.info("training a new live model")
+    _rebuild_features(con, store, now)
+    data = _training_data(con)
+    data = data[data["delivery_date"] < now.date() + timedelta(days=1)]
+    features = feature_columns(data.drop(columns=["y"]))
+    artifact.train_and_save(data, features, MODEL_DIR)
+    loaded = artifact.load_latest(MODEL_DIR)
+    assert loaded is not None
+    return loaded
+
+
+def _export_all(con: duckdb.DuckDBPyConnection, now: datetime) -> None:
+    export.clear_sample_data(EXPORT_DIR)
+    export.export_tomorrow(FORECAST_LOG_DIR, EXPORT_DIR)
+    scores = score.rebuild_scores(con, FORECAST_LOG_DIR)
+    if not scores.empty:
+        export.export_track_record(scores, EXPORT_DIR, now)
+    export.export_backtest(BACKTEST_DIR / "report.json", EXPORT_DIR)
+
+
+def cmd_daily_forecast(args: argparse.Namespace) -> int:
+    """Ingest, check and forecast tomorrow. Exits 1 if the day is not published."""
+    now = utcnow()
+    delivery = daily.target_delivery(now)
+    if forecast_log.exists(FORECAST_LOG_DIR, delivery):
+        print(f"{delivery}: already logged")
+        return 0
+    con = connect()
+    failure: str | None = None
+    store: DataStore | None = None
+    model: artifact.LiveModel | None = None
+    try:
+        _ingest_recent(con, now)
+        issues = run_checks(con, now)
+        write_report(issues, now, QUALITY_DIR)
+        errors = [i for i in issues if i.severity == "error"]
+        if errors:
+            failure = "quality checks failed: " + "; ".join(e.message for e in errors)[:240]
+        else:
+            store = DataStore.load(con)
+            model = _ensure_model(con, store, now)
+    except Exception as exc:
+        logging.exception("daily forecast preparation failed")
+        failure = f"{type(exc).__name__}: {exc}"[:280]
+    decision = daily.run_forecast(utcnow(), FORECAST_LOG_DIR, store, model, failure)
+    _export_all(con, utcnow())
+    print(f"{decision.delivery}: {decision.outcome} {decision.detail}".strip())
+    return 1 if decision.failed else 0
+
+
+def cmd_daily_score(args: argparse.Namespace) -> int:
+    """Ingest published prices, score earlier forecasts and refresh the dashboard's data."""
+    now = utcnow()
+    con = connect()
+    _ingest_recent(con, now)
+    _export_all(con, now)
+    print("scored and exported")
+    return 0
+
+
+def cmd_export(args: argparse.Namespace) -> int:
+    _export_all(connect(), utcnow())
+    print(f"exported to {EXPORT_DIR}")
+    return 0
+
+
+def cmd_verify_log(args: argparse.Namespace) -> int:
+    print(f"forecast log verified: {forecast_log.verify(FORECAST_LOG_DIR)} entries")
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="epf", description=__doc__)
     parser.add_argument("-v", "--verbose", action="store_true")
@@ -215,6 +323,18 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--start", default=BACKTEST_START)
     p.add_argument("--end", default=BACKTEST_END)
     p.set_defaults(func=cmd_backtest)
+
+    p = sub.add_parser("daily-forecast", help="ingest, check and log tomorrow's forecast")
+    p.set_defaults(func=cmd_daily_forecast)
+
+    p = sub.add_parser("daily-score", help="ingest published prices, score and export")
+    p.set_defaults(func=cmd_daily_score)
+
+    p = sub.add_parser("export", help="write dashboard JSON from the log, scores and backtest")
+    p.set_defaults(func=cmd_export)
+
+    p = sub.add_parser("verify-log", help="check the forecast log's hash chain")
+    p.set_defaults(func=cmd_verify_log)
 
     p = sub.add_parser("poll-availability", help="log when SMARD files change (no market values)")
     p.set_defaults(func=cmd_poll)
