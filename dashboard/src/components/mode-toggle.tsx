@@ -12,7 +12,7 @@ export function ModeToggle() {
     <Button
       variant="ghost"
       size="icon"
-      className="group/mode relative size-11 text-inherit hover:bg-white/10! hover:text-inherit! focus-visible:ring-2 focus-visible:ring-accent"
+      className="group/mode relative size-11 text-inherit hover:bg-black/5! hover:text-inherit! dark:hover:bg-white/10! focus-visible:ring-2 focus-visible:ring-accent"
       aria-label="Toggle dark mode"
       onClick={() => setTheme(resolvedTheme === "dark" ? "light" : "dark")}
     >
