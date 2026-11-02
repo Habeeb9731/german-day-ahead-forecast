@@ -49,7 +49,7 @@ export function SiteHeader() {
   const [open, setOpen] = useState(false);
   return (
     <header className="sticky top-0 z-40 border-b bg-background">
-      <div className="mx-auto flex h-14 w-full max-w-6xl items-center justify-between gap-2 px-4">
+      <div className="flex h-14 w-full items-center justify-between gap-2 px-4 lg:px-6">
         <Link href="/" className="flex min-w-0 items-center gap-2 text-sm font-semibold">
           <Zap className="size-4 shrink-0" aria-hidden />
           <span className="truncate">DE-LU day-ahead forecast</span>

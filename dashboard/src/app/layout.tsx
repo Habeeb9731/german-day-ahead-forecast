@@ -30,11 +30,11 @@ export default function RootLayout({ children }: { children: ReactNode }) {
             Skip to content
           </a>
           <SiteHeader />
-          <main id="main" tabIndex={-1} className="mx-auto w-full max-w-6xl flex-1 px-4 py-6 outline-none">
+          <main id="main" tabIndex={-1} className="w-full flex-1 px-4 py-6 outline-none lg:px-6">
             {children}
           </main>
           <footer className="border-t">
-            <div className="mx-auto w-full max-w-6xl space-y-1 px-4 py-4 text-xs text-muted-foreground">
+            <div className="w-full space-y-1 px-4 py-4 text-xs text-muted-foreground lg:px-6">
               <p>
                 Market data: Bundesnetzagentur | SMARD.de (CC BY 4.0). Weather data by{" "}
                 <a className="underline underline-offset-2" href="https://open-meteo.com/" rel="noreferrer" target="_blank">
