@@ -57,7 +57,7 @@ export function ForecastChart({ hours }: { hours: ForecastHour[] }) {
           dataKey="band"
           type="step"
           fill="var(--color-band)"
-          className="[&_path]:[fill-opacity:0.55] dark:[&_path]:[fill-opacity:0.2]"
+          className="[&_path]:[fill-opacity:0.18] dark:[&_path]:[fill-opacity:0.28]"
           stroke="none"
           isAnimationActive={false}
         />

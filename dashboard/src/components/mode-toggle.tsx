@@ -4,28 +4,22 @@ import { Moon, Sun } from "lucide-react";
 import { useTheme } from "next-themes";
 
 import { Button } from "@/components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 
+/** One click switches between light and dark, starting from the visitor's system setting. */
 export function ModeToggle() {
-  const { setTheme } = useTheme();
+  const { resolvedTheme, setTheme } = useTheme();
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="icon" className="relative size-11 text-inherit hover:bg-white/10! hover:text-inherit! focus-visible:ring-2 focus-visible:ring-accent" aria-label="Change colour theme">
-          <Sun className="size-4 scale-100 rotate-0 transition-all dark:scale-0 dark:-rotate-90" />
-          <Moon className="absolute size-4 scale-0 rotate-90 transition-all dark:scale-100 dark:rotate-0" />
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end">
-        <DropdownMenuItem onClick={() => setTheme("light")}>Light</DropdownMenuItem>
-        <DropdownMenuItem onClick={() => setTheme("dark")}>Dark</DropdownMenuItem>
-        <DropdownMenuItem onClick={() => setTheme("system")}>System</DropdownMenuItem>
-      </DropdownMenuContent>
-    </DropdownMenu>
+    <Button
+      variant="ghost"
+      size="icon"
+      className="group/mode relative size-11 text-inherit hover:bg-white/10! hover:text-inherit! focus-visible:ring-2 focus-visible:ring-accent"
+      aria-label="Toggle dark mode"
+      onClick={() => setTheme(resolvedTheme === "dark" ? "light" : "dark")}
+    >
+      <span className="relative block size-[18px] transition-transform duration-350 ease-[cubic-bezier(.34,1.8,.5,1)] group-hover/mode:scale-110 group-hover/mode:-rotate-[24deg] group-active/mode:scale-[.88] motion-reduce:transition-none">
+        <Sun className="absolute inset-0 size-[18px]! scale-100 rotate-0 transition-all dark:scale-0 dark:-rotate-90" aria-hidden />
+        <Moon className="absolute inset-0 size-[18px]! scale-0 rotate-90 transition-all dark:scale-100 dark:rotate-0" aria-hidden />
+      </span>
+    </Button>
   );
 }
