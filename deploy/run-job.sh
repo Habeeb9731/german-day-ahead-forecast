@@ -7,10 +7,13 @@ job="$1"
 docker compose -f deploy/compose.yaml --profile jobs run --rm pipeline epf "$job"
 status=$?
 
-git add data/forecast_log
-if ! git diff --cached --quiet; then
-    git commit -q -m "chore(forecast): add log entry from $job"
-    git pull -q --rebase origin main && git push -q origin main || status=1
+# Pushing the log needs a git checkout with a deploy key. Without one, the log stays on this server.
+if [ -d .git ]; then
+    git add data/forecast_log
+    if ! git diff --cached --quiet; then
+        git commit -q -m "chore(forecast): add log entry from $job"
+        git pull -q --rebase origin main && git push -q origin main || status=1
+    fi
 fi
 
 if [ "$status" -ne 0 ] && [ -n "${EPF_ALERT_WEBHOOK:-}" ]; then
