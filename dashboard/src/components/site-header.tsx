@@ -1,86 +1,73 @@
 "use client";
 
-import { Menu, Zap } from "lucide-react";
+import { BrainCircuit, CalendarClock, ChartLine, Info, PlugZap, Zap } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
 
 import { ModeToggle } from "@/components/mode-toggle";
-import { Button } from "@/components/ui/button";
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from "@/components/ui/sheet";
+import { Separator } from "@/components/ui/separator";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { cn } from "@/lib/utils";
 
 const LINKS = [
-  { href: "/", label: "Tomorrow" },
-  { href: "/track-record/", label: "Track record" },
-  { href: "/model/", label: "Model" },
-  { href: "/ev-charging/", label: "EV charging" },
-  { href: "/about/", label: "About" },
+  { href: "/", label: "Tomorrow", icon: CalendarClock },
+  { href: "/track-record/", label: "Track record", icon: ChartLine },
+  { href: "/model/", label: "Model", icon: BrainCircuit },
+  { href: "/ev-charging/", label: "EV charging", icon: PlugZap },
+  { href: "/about/", label: "About", icon: Info },
 ];
 
-function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
+export function SiteHeader() {
   const pathname = usePathname();
   const normalized = pathname.endsWith("/") ? pathname : `${pathname}/`;
-  return LINKS.map((link) => {
-    const active = normalized === link.href;
-    return (
-      <Button
-        key={link.href}
-        asChild
-        variant="ghost"
-        size="default"
-        className={active ? "justify-start bg-accent! text-accent-foreground!" : "justify-start text-muted-foreground"}
-      >
-        <Link href={link.href} aria-current={active ? "page" : undefined} onClick={onNavigate}>
-          {link.label}
-        </Link>
-      </Button>
-    );
-  });
-}
-
-export function SiteHeader() {
-  const [open, setOpen] = useState(false);
   return (
-    <header className="sticky top-0 z-40 bg-background">
-      <div className="flex h-16 w-full items-center justify-between gap-2 px-4 lg:px-6">
-        <Link href="/" className="flex min-w-0 items-center gap-2.5">
+    <>
+      {/* The brand scrolls away with the page. Only the pill stays pinned, floating over content. */}
+      <header className="relative">
+        <Link
+          href="/"
+          className="absolute top-3 left-4 hidden h-14 items-center gap-2.5 lg:left-6 lg:flex"
+        >
           <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-accent text-accent-foreground">
             <Zap className="size-4" aria-hidden />
           </span>
-          <span className="truncate font-heading text-lg font-medium">
-            DE-LU <span className="hidden sm:inline">day-ahead </span>forecast
-          </span>
+          <span className="font-heading text-lg font-medium">DE-LU day-ahead forecast</span>
         </Link>
-        <nav aria-label="Main" className="hidden items-center gap-1 md:flex">
-          <NavLinks />
-        </nav>
-        <div className="flex items-center gap-2">
+      </header>
+      <div className="pointer-events-none sticky top-3 z-40 mt-3 flex justify-center px-4">
+        <nav
+          aria-label="Main"
+          className="pointer-events-auto flex h-14 items-center gap-0.5 rounded-full border border-white/10 bg-foreground p-1.5 text-background shadow-lg sm:gap-1 dark:bg-card dark:text-foreground"
+        >
+          <TooltipProvider delayDuration={150}>
+            {LINKS.map(({ href, label, icon: Icon }) => {
+              const active = normalized === href;
+              return (
+                <Tooltip key={href}>
+                  <TooltipTrigger asChild>
+                    <Link
+                      href={href}
+                      aria-label={label}
+                      aria-current={active ? "page" : undefined}
+                      className={cn(
+                        "flex size-11 items-center justify-center rounded-full transition-colors outline-none focus-visible:ring-2 focus-visible:ring-accent",
+                        active
+                          ? "bg-background text-foreground dark:bg-foreground dark:text-background"
+                          : "hover:bg-white/10",
+                      )}
+                    >
+                      <Icon className="size-[18px]" aria-hidden />
+                    </Link>
+                  </TooltipTrigger>
+                  <TooltipContent sideOffset={8}>{label}</TooltipContent>
+                </Tooltip>
+              );
+            })}
+          </TooltipProvider>
+          <Separator orientation="vertical" className="mx-1 h-6! self-center! bg-white/20 sm:mx-1.5" />
           <ModeToggle />
-          <Sheet open={open} onOpenChange={setOpen}>
-            <SheetTrigger asChild>
-              <Button variant="secondary" size="icon" className="bg-card md:hidden" aria-label="Open menu">
-                <Menu className="size-4" />
-              </Button>
-            </SheetTrigger>
-            <SheetContent side="right">
-              <SheetHeader>
-                <SheetTitle>Menu</SheetTitle>
-                <SheetDescription className="sr-only">Site pages</SheetDescription>
-              </SheetHeader>
-              <nav aria-label="Mobile" className="flex flex-col gap-1 px-4">
-                <NavLinks onNavigate={() => setOpen(false)} />
-              </nav>
-            </SheetContent>
-          </Sheet>
-        </div>
+        </nav>
       </div>
-    </header>
+    </>
   );
 }

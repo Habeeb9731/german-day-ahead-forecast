@@ -31,7 +31,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
             Skip to content
           </a>
           <SiteHeader />
-          <main id="main" tabIndex={-1} className="w-full flex-1 px-4 py-4 outline-none lg:px-6">
+          <main id="main" tabIndex={-1} className="w-full flex-1 px-4 pt-5 pb-4 outline-none lg:px-6">
             {children}
           </main>
           <footer>
