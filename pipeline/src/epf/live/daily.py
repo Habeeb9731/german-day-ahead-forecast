@@ -92,8 +92,8 @@ def run_forecast(
     failure: str | None = None,
 ) -> Decision:
     """Decide for the next delivery day at `now`. `failure` carries an upstream error, such as
-    failed ingestion or quality checks. Before the cutoff, a problem leaves the day open for a later retry.
-    After the cutoff, the day is recorded as missed and no forecast is produced."""
+    failed ingestion or quality checks. Before the cutoff, a problem leaves the day open for a
+    later retry. After the cutoff, the day is recorded as missed and no forecast is produced."""
     delivery = target_delivery(now)
     if forecast_log.exists(log_root, delivery):
         return Decision("already_logged", delivery)
