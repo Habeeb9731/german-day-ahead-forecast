@@ -25,3 +25,32 @@ jobs:
         run: uv run mypy
       - name: Tests
         run: uv run pytest -m "not live"
+
+  dashboard:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: dashboard
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: dashboard/package-lock.json
+      - run: npm ci
+      - name: Lint
+        run: npm run lint
+      - name: Types
+        run: npm run typecheck
+      - name: Tests
+        run: npm test
+      - name: Sample data guard refuses a production build
+        run: |
+          mkdir -p public/data && cp sample-data/*.json public/data/
+          if npm run -s build; then echo "guard failed to stop the build"; exit 1; fi
+      - name: Build (labelled sample data, CI only)
+        run: npm run build
+        env:
+          ALLOW_SAMPLE_DATA: "1"
