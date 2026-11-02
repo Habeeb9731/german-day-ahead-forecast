@@ -67,6 +67,7 @@
   --border: #e4e4e0;
   --input: #dcdcd7;
   --ring: #1a4314;
+  --bar: #23261f;
   --chart-1: #008300;
   --chart-2: #6250d6;
   --chart-3: #2a78d6;
@@ -102,6 +103,7 @@
   --border: rgb(255 255 255 / 10%);
   --input: rgb(255 255 255 / 16%);
   --ring: #b7ef74;
+  --bar: #565b4e;
   --chart-1: #1baf7a;
   --chart-2: #9085e9;
   --chart-3: #3987e5;
