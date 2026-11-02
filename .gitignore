@@ -1,0 +1,16 @@
+# Data: raw and cleaned market data stay out of git until price licensing is cleared.
+data/*.duckdb*
+data/raw/
+data/clean/
+data/quality/
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.DS_Store
+node_modules/
+.next/
+out/
+.env

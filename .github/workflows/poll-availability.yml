@@ -1,0 +1,37 @@
+# Measures when SMARD publishes each series. Logs timestamps and hashes only, never market values.
+# Temporary: disable once the availability rules in config.py are confirmed.
+name: Poll SMARD availability
+
+on:
+  schedule:
+    - cron: "5,35 6-18 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: poll-availability
+  cancel-in-progress: false
+
+jobs:
+  poll:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+      - name: Poll
+        working-directory: pipeline
+        run: uv run --frozen epf poll-availability
+      - name: Commit log
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/availability
+          git diff --cached --quiet && exit 0
+          git commit -m "chore(availability): poll $(date -u +%FT%H:%MZ)"
+          git pull --rebase origin main
+          git push
