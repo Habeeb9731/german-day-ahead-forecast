@@ -23,8 +23,8 @@ log = logging.getLogger(__name__)
 Outcome = Literal["published", "already_logged", "too_early", "not_ready", "missed"]
 
 
-# "Not ready" before the cutoff is normal, because a later timer retries. This exit code lets the job
-# script tell that apart from a real failure, which is the only thing worth an alert.
+# "Not ready" before the cutoff is normal, because a later timer retries. This exit code lets the
+# job script tell that apart from a real failure, which is the only thing worth an alert.
 EXIT_RETRY_LATER = 75
 
 
