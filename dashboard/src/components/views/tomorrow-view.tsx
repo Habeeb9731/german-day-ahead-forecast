@@ -244,7 +244,7 @@ export function TomorrowView() {
               </div>
               <div>
                 <p className="font-heading text-5xl tracking-tight tabular-nums">{fmt(stats.average)}</p>
-                <p className="mt-1 text-xs">EUR/MWh, forecast for the whole day. Prices below use the same unit.</p>
+                <p className="mt-1 text-xs">All prices in EUR/MWh</p>
               </div>
               <ul className="mt-auto divide-y divide-white/20 rounded-2xl bg-[#04154a]/60 px-3 text-sm backdrop-blur-md">
                 <li className="flex items-center justify-between gap-2 py-2">
