@@ -1,6 +1,7 @@
 "use client";
 
 import { ArrowRight, ArrowUpRight, CalendarDays, Clock, Zap } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
 import { type ReactNode, useMemo } from "react";
 
@@ -218,51 +219,70 @@ export function TomorrowView() {
 
       <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-12">
         {stats && (
-          <Card size="sm" className="min-w-0 gap-0 py-0 xl:col-span-3">
-            <div className="flex flex-1 flex-col gap-6 p-5">
-              <WidgetTitle action={exampleDate ? <Pill>Backtest</Pill> : undefined}>Average price</WidgetTitle>
-              <div>
-                <BigNumber size="xl" value={fmt(stats.average)} />
-                <p className="mt-1 text-xs text-muted-foreground">EUR/MWh, forecast for the whole day</p>
+          <Card size="sm" className="relative isolate min-w-0 gap-0 py-0 text-white xl:col-span-3 dark:ring-0">
+            <Image
+              src={`${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/images/wind-turbine.jpg`}
+              alt=""
+              fill
+              priority
+              sizes="(min-width: 1280px) 25vw, (min-width: 768px) 50vw, 100vw"
+              className="-z-20 object-cover object-[70%_center]"
+            />
+            {/* Keeps white text readable where it crosses the white blade. */}
+            <div className="absolute inset-0 -z-10 bg-gradient-to-b from-[#04154a]/50 via-[#04154a]/10 to-[#04154a]/60" aria-hidden />
+            <div className="flex flex-1 flex-col gap-5 p-5">
+              <div className="flex min-h-7 items-center justify-between gap-2">
+                <h2 className="flex items-center gap-2 text-sm font-medium">
+                  <span className="size-3 shrink-0 rounded-[4px] bg-white" aria-hidden />
+                  Average price
+                </h2>
+                {exampleDate && (
+                  <span className="rounded-full bg-white px-2 py-0.5 text-xs font-medium text-[#04154a]">
+                    Backtest
+                  </span>
+                )}
               </div>
-              <ul className="divide-y text-sm">
+              <div>
+                <p className="font-heading text-5xl tracking-tight tabular-nums">{fmt(stats.average)}</p>
+                <p className="mt-1 text-xs">EUR/MWh, forecast for the whole day. Prices below use the same unit.</p>
+              </div>
+              <ul className="mt-auto divide-y divide-white/20 rounded-2xl bg-[#04154a]/60 px-3 text-sm backdrop-blur-md">
                 <li className="flex items-center justify-between gap-2 py-2">
-                  <span className="text-muted-foreground">Spread, high to low</span>
+                  <span>Spread, high to low</span>
                   <span className="tabular-nums">{fmt(stats.highest.p50 - stats.lowest.p50)}</span>
                 </li>
                 <li className="flex items-center justify-between gap-2 py-2">
-                  <span className="text-muted-foreground">Average P10–P90 width</span>
+                  <span>Average P10–P90 width</span>
                   <span className="tabular-nums">
                     {fmt(hours.reduce((sum, h) => sum + h.p90 - h.p10, 0) / hours.length)}
                   </span>
                 </li>
                 <li className="flex items-center justify-between gap-2 py-2">
-                  <span className="text-muted-foreground">Hours below average</span>
+                  <span>Hours below average</span>
                   <span className="tabular-nums">
                     {hours.filter((h) => h.p50 < stats.average).length} of {hours.length}
                   </span>
                 </li>
+                {latest && (
+                  <li className="flex items-center justify-between gap-2 py-2">
+                    <span>{shortDateLabel(latest.date)} actual average</span>
+                    <span className="font-medium tabular-nums">{fmt(latest.actual)}</span>
+                  </li>
+                )}
               </ul>
-              {latest && (
-                <p className="mt-auto text-xs text-muted-foreground">
-                  {shortDateLabel(latest.date)} actually averaged{" "}
-                  <span className="font-medium text-foreground tabular-nums">{fmt(latest.actual)}</span>{" "}
-                  EUR/MWh.
-                </p>
-              )}
-            </div>
-            <div className="grid grid-cols-2 divide-x border-t">
-              {[
-                { label: "Highest", hour: stats.highest },
-                { label: "Lowest", hour: stats.lowest },
-              ].map(({ label, hour }) => (
-                <div key={label} className="min-w-0 p-4">
-                  <BigNumber size="sm" value={fmt(hour.p50)} />
-                  <p className="mt-1 text-xs text-muted-foreground">
-                    {label} at {hourLabel(hour.valid_from_utc, isDstDay)}
-                  </p>
-                </div>
-              ))}
+              <div className="grid grid-cols-2 gap-2">
+                {[
+                  { label: "Highest", hour: stats.highest },
+                  { label: "Lowest", hour: stats.lowest },
+                ].map(({ label, hour }) => (
+                  <div key={label} className="min-w-0 rounded-2xl bg-[#04154a]/60 p-3 backdrop-blur-md">
+                    <p className="font-heading text-2xl tracking-tight tabular-nums">{fmt(hour.p50)}</p>
+                    <p className="mt-0.5 text-xs">
+                      {label} at {hourLabel(hour.valid_from_utc, isDstDay)}
+                    </p>
+                  </div>
+                ))}
+              </div>
             </div>
           </Card>
         )}
