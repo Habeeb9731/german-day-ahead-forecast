@@ -8,3 +8,4 @@ Type=oneshot
 EnvironmentFile=-/opt/depower/deploy/alert.env
 ExecStart=/opt/depower/deploy/run-job.sh daily-forecast
 TimeoutStartSec=30min
+SuccessExitStatus=75

@@ -269,7 +269,7 @@ def cmd_daily_forecast(args: argparse.Namespace) -> int:
     decision = daily.run_forecast(utcnow(), FORECAST_LOG_DIR, store, model, failure)
     _export_all(con, utcnow())
     print(f"{decision.delivery}: {decision.outcome} {decision.detail}".strip())
-    return 1 if decision.failed else 0
+    return decision.exit_code
 
 
 def cmd_daily_score(args: argparse.Namespace) -> int:

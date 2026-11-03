@@ -23,6 +23,11 @@ log = logging.getLogger(__name__)
 Outcome = Literal["published", "already_logged", "too_early", "not_ready", "missed"]
 
 
+# "Not ready" before the cutoff is normal, because a later timer retries. This exit code lets the job
+# script tell that apart from a real failure, which is the only thing worth an alert.
+EXIT_RETRY_LATER = 75
+
+
 class ForecastNotReady(RuntimeError):
     """Inputs for the delivery day are missing or incomplete."""
 
@@ -36,6 +41,12 @@ class Decision:
     @property
     def failed(self) -> bool:
         return self.outcome in {"not_ready", "missed"}
+
+    @property
+    def exit_code(self) -> int:
+        if self.outcome == "not_ready":
+            return EXIT_RETRY_LATER
+        return 1 if self.failed else 0
 
 
 def target_delivery(now: datetime) -> date:

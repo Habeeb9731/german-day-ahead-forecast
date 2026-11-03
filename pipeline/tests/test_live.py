@@ -133,6 +133,16 @@ def test_failure_before_cutoff_leaves_day_open_for_retry(tmp_path, store, model)
     )
 
 
+def test_exit_codes_separate_retries_from_real_failures(tmp_path, store, model):
+    retry = daily.run_forecast(WINDOW, tmp_path, store, model, failure="data late")
+    assert retry.exit_code == daily.EXIT_RETRY_LATER
+    missed = daily.run_forecast(LATE, tmp_path, store, model)
+    assert missed.exit_code == 1
+    assert daily.Decision("published", DELIVERY).exit_code == 0
+    assert daily.Decision("already_logged", DELIVERY).exit_code == 0
+    assert daily.Decision("too_early", DELIVERY).exit_code == 0
+
+
 def test_failure_at_final_run_is_recorded_with_reason(tmp_path):
     decision = daily.run_forecast(LATE, tmp_path, None, None, failure="SMARD unavailable")
     assert decision.outcome == "missed"
