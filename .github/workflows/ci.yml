@@ -60,7 +60,7 @@ jobs:
         run: npm test
       - name: Sample data guard refuses a production build
         run: |
-          mkdir -p public/data && cp sample-data/*.json public/data/
+          mkdir -p public/data && npm run sample
           if npm run -s build; then echo "guard failed to stop the build"; exit 1; fi
       - name: Build (labelled sample data, CI only)
         run: npm run build

@@ -40,5 +40,6 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-# Real exports hold prices and stay out of git. Synthetic data lives in sample-data/.
+# Real exports hold prices and stay out of git. Sample data is generated, dated to today.
 /public/data/
+/sample-data/
