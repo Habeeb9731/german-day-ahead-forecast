@@ -85,7 +85,7 @@ Systemd timers on a Hetzner server run the jobs in containers. GitHub Actions ru
 | 11:35 | If no run succeeded, record the day as missed |
 | 14:05, 20:35 | Ingest published prices, score earlier forecasts and export |
 
-A forecast is written once, to one file per delivery date, and each entry stores the hash of the one before it. `epf verify-log` checks that chain, and CI fails if a logged forecast is changed. A late or incomplete run publishes nothing, and the dashboard flags old data rather than presenting it as new. A missed day or a failed job also sends an email alert. Retries before the cutoff stay quiet.
+A forecast is written once, to one file per delivery date, and each entry stores the hash of the one before it. `epf verify-log` checks that chain, and CI fails if a logged forecast is changed. A late or incomplete run publishes nothing, and the dashboard flags old data rather than presenting it as new.
 
 ### Forecast resolution
 
