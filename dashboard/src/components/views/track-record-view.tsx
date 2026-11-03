@@ -1,6 +1,6 @@
 "use client";
 
-import { CalendarDays } from "lucide-react";
+import { CalendarDays, FlaskConical } from "lucide-react";
 import { useMemo, useState } from "react";
 import type { DateRange } from "react-day-picker";
 
@@ -15,6 +15,7 @@ import {
   StaleBanner,
 } from "@/components/page-states";
 import { StatCard } from "@/components/stat-card";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -47,8 +48,7 @@ function Shell({ children }: { children: React.ReactNode }) {
   return (
     <div className="space-y-4">
       <PageHeader title="Track record">
-        Live forecasts scored against published prices. Backtest results are kept separately on the
-        Model page.
+        Forecasts scored against published prices. Live and backtest results are kept separate.
       </PageHeader>
       {children}
     </div>
@@ -56,10 +56,17 @@ function Shell({ children }: { children: React.ReactNode }) {
 }
 
 export function TrackRecordView() {
-  const state = useData<TrackRecordFile>("track_record.json");
-  if (state.status === "loading") return <Shell><LoadingState /></Shell>;
-  if (state.status === "error") return <Shell><ErrorState message={state.message} /></Shell>;
-  if (state.status === "empty" || state.data.hours.length === 0) {
+  const live = useData<TrackRecordFile>("track_record.json");
+  const backtest = useData<TrackRecordFile>("backtest_track.json");
+  const [chosen, setChosen] = useState<"live" | "backtest" | null>(null);
+
+  if (live.status === "loading" || backtest.status === "loading") {
+    return <Shell><LoadingState /></Shell>;
+  }
+  const hasLive = live.status === "ready" && live.data.hours.length > 0;
+  const hasBacktest = backtest.status === "ready" && backtest.data.hours.length > 0;
+  if (!hasLive && !hasBacktest) {
+    if (live.status === "error") return <Shell><ErrorState message={live.message} /></Shell>;
     return (
       <Shell>
         <EmptyState title="No live forecasts have been scored yet">
@@ -69,10 +76,42 @@ export function TrackRecordView() {
       </Shell>
     );
   }
-  return <Shell><Loaded data={state.data} /></Shell>;
+  const source = chosen ?? (hasLive ? "live" : "backtest");
+  const data = source === "live" && live.status === "ready" ? live.data : null;
+  const shown = data ?? (backtest.status === "ready" ? backtest.data : null);
+  return (
+    <Shell>
+      <ToggleGroup
+        type="single"
+        variant="outline"
+        value={source}
+        onValueChange={(v) => v && setChosen(v as "live" | "backtest")}
+        aria-label="Forecast source"
+      >
+        <ToggleGroupItem value="live" disabled={!hasLive}>
+          Live{hasLive ? "" : " (none yet)"}
+        </ToggleGroupItem>
+        <ToggleGroupItem value="backtest" disabled={!hasBacktest}>
+          Backtest
+        </ToggleGroupItem>
+      </ToggleGroup>
+      {source === "backtest" && (
+        <Alert className="border-chart-4">
+          <FlaskConical aria-hidden />
+          <AlertTitle>Backtest: simulated past forecasts, not live results</AlertTitle>
+          <AlertDescription>
+            Each month&apos;s forecasts came from a model trained only on earlier data. Actual prices are
+            real, but these forecasts were not published at the time.
+            {!hasLive && " Live forecasts will appear here once they have been scored."}
+          </AlertDescription>
+        </Alert>
+      )}
+      {shown && <Loaded key={source} data={shown} isBacktest={source === "backtest"} />}
+    </Shell>
+  );
 }
 
-function Loaded({ data }: { data: TrackRecordFile }) {
+function Loaded({ data, isBacktest }: { data: TrackRecordFile; isBacktest: boolean }) {
   const lastDate = data.hours[data.hours.length - 1].delivery_date;
   const firstDate = data.hours[0].delivery_date;
   const [loadedAt] = useState(() => Date.now());
@@ -121,7 +160,7 @@ function Loaded({ data }: { data: TrackRecordFile }) {
   return (
     <div className="space-y-4">
       {data.is_sample && <SampleBanner />}
-      {generatedDaysAgo > STALE_AFTER_DAYS && (
+      {!isBacktest && generatedDaysAgo > STALE_AFTER_DAYS && (
         <StaleBanner>
           The scores were last updated on {dateTimeLabel(data.generated_at_utc)}. Scoring may have
           stopped running.
@@ -167,7 +206,7 @@ function Loaded({ data }: { data: TrackRecordFile }) {
       </div>
 
       <div className="grid gap-4 sm:grid-cols-3">
-        <StatCard accent label={`Model MAE, ${daily.length} days`} value={fmt(rangeMae)} unit="EUR/MWh" />
+        <StatCard accent label={`${isBacktest ? "Backtest" : "Model"} MAE, ${daily.length} days`} value={fmt(rangeMae)} unit="EUR/MWh" />
         <StatCard label={MODEL_LABELS.baseline_prev_day} value={fmt(baselineMae("baseline_prev_day"))} unit="EUR/MWh" />
         <StatCard label={MODEL_LABELS.baseline_prev_week} value={fmt(baselineMae("baseline_prev_week"))} unit="EUR/MWh" />
       </div>

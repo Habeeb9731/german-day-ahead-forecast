@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import json
 import logging
 import sys
 from datetime import date, datetime, timedelta
@@ -235,6 +236,10 @@ def _export_all(con: duckdb.DuckDBPyConnection, now: datetime) -> None:
     if not scores.empty:
         export.export_track_record(scores, EXPORT_DIR, now)
     export.export_backtest(BACKTEST_DIR / "report.json", EXPORT_DIR)
+    report_path = BACKTEST_DIR / "report.json"
+    if report_path.exists():
+        version = json.loads(report_path.read_text(encoding="utf-8"))["model_version"]
+        export.export_backtest_track(BACKTEST_DIR / "predictions.parquet", version, EXPORT_DIR, now)
 
 
 def cmd_daily_forecast(args: argparse.Namespace) -> int:

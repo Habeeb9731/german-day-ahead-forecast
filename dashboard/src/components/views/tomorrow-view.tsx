@@ -93,11 +93,19 @@ export function TomorrowView() {
   const forecast = useData<TomorrowFile>("tomorrow.json");
   const track = useData<TrackRecordFile>("track_record.json");
   const backtest = useData<BacktestFile>("backtest.json");
+  const history = useData<TrackRecordFile>("backtest_track.json");
 
-  const hours = useMemo(
-    () => (forecast.status === "ready" && forecast.data.status === "ok" ? forecast.data.hours : []),
-    [forecast],
-  );
+  const historyHours = useMemo(() => (history.status === "ready" ? history.data.hours : []), [history]);
+  // Until the first live forecast exists, the last backtest day stands in, clearly labelled. A missed
+  // or stale day never does: those must stay visible rather than be papered over.
+  const exampleDate =
+    forecast.status === "empty" && historyHours.length > 0
+      ? historyHours[historyHours.length - 1].delivery_date
+      : null;
+  const hours = useMemo(() => {
+    if (exampleDate) return historyHours.filter((h) => h.delivery_date === exampleDate);
+    return forecast.status === "ready" && forecast.data.status === "ok" ? forecast.data.hours : [];
+  }, [forecast, exampleDate, historyHours]);
   const trackHours = useMemo(() => (track.status === "ready" ? track.data.hours : []), [track]);
   const report = backtest.status === "ready" ? backtest.data : null;
 
@@ -107,11 +115,18 @@ export function TomorrowView() {
   const widest = leastCertainHour(hours);
   const negative = negativeHours(hours);
 
-  const latest = useMemo(() => latestScoredDay(trackHours), [trackHours]);
-  const recent = useMemo(() => recentDays(trackHours, RECENT_DAYS), [trackHours]);
-  const coverage = useMemo(() => liveCoverage(trackHours), [trackHours]);
-  const rolling = useMemo(() => rollingMae(trackHours, RECENT_DAYS).slice(-60), [trackHours]);
+  // Each record panel prefers live data and falls back to the backtest, which it then labels.
+  const liveRolling = useMemo(() => rollingMae(trackHours, RECENT_DAYS), [trackHours]);
+  const backtestRolling = useMemo(() => rollingMae(historyHours, RECENT_DAYS), [historyHours]);
+  const recordIsBacktest = trackHours.length === 0;
+  const recordHours = recordIsBacktest ? historyHours : trackHours;
+  const rollingIsBacktest = liveRolling.length === 0;
+  const latest = useMemo(() => latestScoredDay(recordHours), [recordHours]);
+  const recent = useMemo(() => recentDays(recordHours, RECENT_DAYS), [recordHours]);
+  const coverage = useMemo(() => liveCoverage(recordHours), [recordHours]);
+  const rolling = (rollingIsBacktest ? backtestRolling : liveRolling).slice(-60);
   const lastRolling = rolling[rolling.length - 1];
+  const recordWord = recordIsBacktest ? "Backtest" : "Live";
 
   const ev = useMemo(
     () =>
@@ -125,7 +140,8 @@ export function TomorrowView() {
   const isSample =
     (forecast.status === "ready" && forecast.data.is_sample) ||
     (track.status === "ready" && track.data.is_sample) ||
-    Boolean(report?.is_sample);
+    Boolean(report?.is_sample) ||
+    (history.status === "ready" && history.data.is_sample);
 
   const delivery = forecast.status === "ready" ? forecast.data : null;
   const stale = delivery ? isForecastStale(delivery.delivery_date, new Date()) : false;
@@ -148,6 +164,12 @@ export function TomorrowView() {
             <Badge variant="secondary" className="h-10 gap-2 bg-card px-4 text-sm">
               <CalendarDays className="size-4!" aria-hidden />
               {dateLabel(delivery.delivery_date)}
+            </Badge>
+          )}
+          {exampleDate && (
+            <Badge variant="outline" className="h-10 gap-2 border-chart-4 px-4 text-sm">
+              <CalendarDays className="size-4!" aria-hidden />
+              Backtest example: {dateLabel(exampleDate)}
             </Badge>
           )}
           {isDstDay && (
@@ -178,6 +200,7 @@ export function TomorrowView() {
       {forecast.status === "empty" && (
         <EmptyState title="No forecast has been published yet">
           The first forecast appears after the daily pipeline next runs, before the 12:00 auction.
+          {exampleDate && ` Until then, the forecast panels show ${dateLabel(exampleDate)} from the backtest as an example.`}
         </EmptyState>
       )}
       {delivery?.status === "missed" && (
@@ -197,9 +220,7 @@ export function TomorrowView() {
         {stats && (
           <Card size="sm" className="min-w-0 gap-0 py-0 xl:col-span-3">
             <div className="flex flex-1 flex-col gap-6 p-5">
-              <WidgetTitle>
-                Average price
-              </WidgetTitle>
+              <WidgetTitle action={exampleDate ? <Pill>Backtest</Pill> : undefined}>Average price</WidgetTitle>
               <div>
                 <BigNumber size="xl" value={fmt(stats.average)} />
                 <p className="mt-1 text-xs text-muted-foreground">EUR/MWh, forecast for the whole day</p>
@@ -248,7 +269,7 @@ export function TomorrowView() {
 
         {stats && (
           <Widget className="md:col-span-2 xl:col-span-6 xl:row-span-1">
-            <WidgetTitle>Hourly price forecast</WidgetTitle>
+            <WidgetTitle action={exampleDate ? <Pill>Backtest</Pill> : undefined}>Hourly price forecast</WidgetTitle>
             {blocks && (
               <div className="flex flex-wrap items-center gap-x-8 gap-y-2">
                 <div className="flex items-center gap-2">
@@ -393,7 +414,7 @@ export function TomorrowView() {
                 </Button>
               }
             >
-              EV charging, {EV_KWH} kWh at {EV_KW} kW
+              EV charging, {EV_KWH} kWh at {EV_KW} kW{exampleDate ? " (backtest example)" : ""}
             </WidgetTitle>
             {ev.feasible ? (
               <>
@@ -441,7 +462,7 @@ export function TomorrowView() {
         )}
 
         <Widget className="xl:col-span-3">
-          <WidgetTitle>Live error, last {RECENT_DAYS} days</WidgetTitle>
+          <WidgetTitle>{recordWord} error, last {RECENT_DAYS} days</WidgetTitle>
           {recent.length > 0 ? (
             <>
               <DailyErrorLollipops data={recent.map((d) => ({ date: d.date, mae: d.mae }))} />
@@ -452,7 +473,9 @@ export function TomorrowView() {
                   </li>
                 ))}
               </ul>
-              <p className="text-xs text-muted-foreground">Daily MAE of live forecasts, EUR/MWh.</p>
+              <p className="text-xs text-muted-foreground">
+                Daily MAE of {recordIsBacktest ? "simulated backtest" : "live"} forecasts, EUR/MWh.
+              </p>
             </>
           ) : (
             <Quiet>Appears once live forecasts have been scored.</Quiet>
@@ -461,7 +484,7 @@ export function TomorrowView() {
 
         <Card size="sm" className="min-w-0 gap-2 bg-accent text-accent-foreground xl:col-span-2">
           <CardContent className="flex h-full flex-col gap-2">
-            <h2 className="text-sm font-medium">Rolling {RECENT_DAYS}-day MAE</h2>
+            <h2 className="text-sm font-medium">{rollingIsBacktest ? "Backtest rolling" : "Rolling"} {RECENT_DAYS}-day MAE</h2>
             {lastRolling ? (
               <>
                 <p className="font-heading text-3xl tracking-tight tabular-nums">
@@ -482,13 +505,13 @@ export function TomorrowView() {
         <div className="grid min-w-0 grid-cols-2 gap-3 md:col-span-2 xl:col-span-3">
           {[
             {
-              label: latest ? `Error on ${shortDateLabel(latest.date)}` : "Latest error",
+              label: latest ? `${recordWord} error on ${shortDateLabel(latest.date)}` : "Latest error",
               value: latest ? fmt(latest.mae) : "n/a",
               unit: latest ? "EUR/MWh" : undefined,
               note: latest ? "Most recent scored day" : "Not scored yet",
             },
             {
-              label: "Live coverage",
+              label: `${recordWord} coverage`,
               value: coverage === null ? "n/a" : `${fmt(coverage, 1)}%`,
               note: coverage === null ? "Not scored yet" : "Last 30 days, target 80%",
             },

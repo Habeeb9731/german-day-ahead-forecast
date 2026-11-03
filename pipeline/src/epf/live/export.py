@@ -91,6 +91,42 @@ def export_backtest(report_path: Path, out: Path) -> bool:
     return True
 
 
+def export_backtest_track(predictions_path: Path, version: str, out: Path, now: datetime) -> bool:
+    """Hourly backtest forecasts with actual prices, in their own file and clearly marked, so the
+    dashboard can show history without mixing it into the live record."""
+    if not predictions_path.exists():
+        return False
+    df = pd.read_parquet(predictions_path).sort_values("valid_from_utc")
+    records = df.to_dict("records")
+    _write(
+        out / "backtest_track.json",
+        {
+            "kind": "backtest_track_record",
+            "is_sample": False,
+            "note": "Simulated walk-forward forecasts, not live forecasts.",
+            "generated_at_utc": now.isoformat(timespec="seconds"),
+            "hours": [
+                {
+                    "valid_from_utc": pd.Timestamp(r["valid_from_utc"]).isoformat(
+                        timespec="seconds"
+                    ),
+                    "delivery_date": pd.Timestamp(r["delivery_date"]).date().isoformat(),
+                    "p10": _number(r["p10"]),
+                    "p50": _number(r["p50"]),
+                    "p90": _number(r["p90"]),
+                    "actual": _number(r["y"]),
+                    "baseline_prev_day": _number(r["baseline_prev_day"]),
+                    "baseline_prev_week": _number(r["baseline_prev_week"]),
+                    "model_version": version,
+                    "forecast_generated_at_utc": None,
+                }
+                for r in records
+            ],
+        },
+    )
+    return True
+
+
 def clear_sample_data(out: Path) -> None:
     """Remove synthetic files from an output folder before real exports are written."""
     if not out.exists():
@@ -103,6 +139,7 @@ def clear_sample_data(out: Path) -> None:
 __all__ = [
     "clear_sample_data",
     "export_backtest",
+    "export_backtest_track",
     "export_tomorrow",
     "export_track_record",
 ]

@@ -24,11 +24,12 @@ export interface TrackHour extends ForecastHour {
   baseline_prev_day: number | null;
   baseline_prev_week: number | null;
   model_version: string;
-  forecast_generated_at_utc: string;
+  /** Null for backtest rows, which were simulated rather than generated at the time. */
+  forecast_generated_at_utc: string | null;
 }
 
 export interface TrackRecordFile {
-  kind: "live_track_record";
+  kind: "live_track_record" | "backtest_track_record";
   is_sample: boolean;
   generated_at_utc: string;
   hours: TrackHour[];

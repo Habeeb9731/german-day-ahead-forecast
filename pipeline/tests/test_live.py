@@ -284,3 +284,31 @@ def test_saved_model_predicts_same_as_loaded(store, model):
     assert (out["p10"] <= out["p50"]).all() and (out["p50"] <= out["p90"]).all()
     assert model.trained_through == date(2026, 6, 3)
     assert "all" in model.adjustments
+
+
+def test_backtest_track_is_separate_and_marked(tmp_path):
+    predictions = pd.DataFrame(
+        {
+            "delivery_date": [date(2026, 1, 1), date(2026, 1, 1)],
+            "valid_from_utc": pd.to_datetime(["2026-01-01 00:00", "2025-12-31 23:00"]),
+            "y": [-5.0, 40.0],
+            "p10": [-20.0, 30.0],
+            "p50": [1.0, 41.0],
+            "p90": [9.0, 50.0],
+            "baseline_prev_day": [2.0, float("nan")],
+            "baseline_prev_week": [3.0, 4.0],
+        }
+    )
+    source = tmp_path / "predictions.parquet"
+    predictions.to_parquet(source)
+    out = tmp_path / "out"
+    assert export.export_backtest_track(source, "v1", out, WINDOW)
+    data = json.loads((out / "backtest_track.json").read_text())
+    assert data["kind"] == "backtest_track_record"
+    assert not (out / "track_record.json").exists()
+    first, second = data["hours"]
+    assert first["valid_from_utc"] == "2025-12-31T23:00:00"
+    assert first["baseline_prev_day"] is None
+    assert first["forecast_generated_at_utc"] is None
+    assert second["actual"] == -5.0
+    assert not export.export_backtest_track(tmp_path / "none.parquet", "v1", out, WINDOW)
