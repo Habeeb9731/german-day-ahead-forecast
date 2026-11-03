@@ -105,12 +105,12 @@ export function SiteHeader() {
         <Link
           href="/"
           aria-label={t("depower home")}
-          className="absolute top-3 left-4 hidden h-14 items-center lg:left-6 lg:flex"
+          className="flex h-14 w-fit items-center px-4 md:absolute md:top-3 md:left-4 md:px-0 lg:left-6"
         >
           <Logo />
         </Link>
       </header>
-      <div className="pointer-events-none sticky top-3 z-40 mt-3 flex justify-center px-4">
+      <div className="pointer-events-none fixed inset-x-0 bottom-3 z-40 flex justify-center px-4 md:sticky md:top-3 md:bottom-auto md:mt-3">
         <nav
           ref={navRef}
           aria-label={t("Main")}

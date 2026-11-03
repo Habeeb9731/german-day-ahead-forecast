@@ -16,7 +16,7 @@ export function SkipLink() {
 export function SiteFooter() {
   return (
     <footer>
-      <div className="w-full space-y-1 px-4 py-4 text-xs text-muted-foreground lg:px-6">
+      <div className="w-full space-y-1 px-4 pt-4 pb-24 text-xs text-muted-foreground md:pb-4 lg:px-6">
         <p>
           {tRich(
             "Market data: Bundesnetzagentur | SMARD.de (CC BY 4.0). Weather data by {link} (CC BY 4.0). Data modified. See About.",

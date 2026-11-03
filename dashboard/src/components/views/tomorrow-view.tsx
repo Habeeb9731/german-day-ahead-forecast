@@ -154,12 +154,14 @@ export function TomorrowView() {
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-3">
+      <div className="flex flex-wrap items-center justify-between gap-2 md:gap-3">
         <PageHeader title={t("Tomorrow")} />
-        <div className="flex flex-wrap items-center gap-2">
+        {/* On phones: page name and Track record share a row, with the status badges in a row below. */}
+        <span className="order-2 basis-full md:hidden" aria-hidden />
+        <div className="flex flex-wrap items-center gap-2 max-md:contents">
           {delivery && (
-            <Badge variant="secondary" className="h-10 gap-2 bg-card px-4 text-sm">
-              <CalendarDays className="size-4!" aria-hidden />
+            <Badge variant="secondary" className="h-10 gap-2 bg-card px-4 text-sm max-md:order-3 max-md:basis-full">
+              <CalendarDays className="size-4! shrink-0" aria-hidden />
               {dateLabel(delivery.delivery_date)}
             </Badge>
           )}
@@ -169,7 +171,7 @@ export function TomorrowView() {
                 <Button
                   variant="secondary"
                   size="icon"
-                  className="size-10 bg-card"
+                  className="size-10 bg-card max-md:order-3"
                   aria-label={t("Why this page shows a backtest example")}
                 >
                   <Info aria-hidden />
@@ -184,23 +186,23 @@ export function TomorrowView() {
             </Popover>
           )}
           {exampleDate && settled && (
-            <Badge variant="outline" className="h-10 gap-2 border-chart-4 px-4 text-sm">
-              <CalendarDays className="size-4!" aria-hidden />
+            <Badge variant="outline" className="h-10 min-w-0 gap-2 border-chart-4 px-4 text-sm max-md:order-3 max-md:flex-1 max-md:px-3 max-md:text-xs">
+              <CalendarDays className="size-4! shrink-0 max-[359px]:hidden" aria-hidden />
               {t("Backtest example: {date}", { date: dateLabel(exampleDate) })}
             </Badge>
           )}
           {isDstDay && (
-            <Badge variant="outline" className="h-10 px-4 text-sm">
+            <Badge variant="outline" className="h-10 px-4 text-sm max-md:order-3 max-md:basis-full max-md:text-xs">
               {t("{n}-hour day (clock change)", { n: hours.length })}
             </Badge>
           )}
           {delivery && (
-            <Badge variant="secondary" className="h-10 gap-2 bg-card px-4 text-sm">
-              <Clock className="size-4!" aria-hidden />
+            <Badge variant="secondary" className="h-10 gap-2 bg-card px-4 text-sm max-md:order-3 max-md:basis-full max-md:text-xs">
+              <Clock className="size-4! shrink-0" aria-hidden />
               {t("Updated {date}", { date: dateTimeLabel(delivery.generated_at_utc) })}
             </Badge>
           )}
-          <Button asChild className="h-10 pr-1.5 pl-4">
+          <Button asChild className="h-10 pr-1.5 pl-4 max-md:order-1">
             <Link href="/track-record/">
               {t("Track record")}
               <span className="flex size-7 items-center justify-center rounded-full bg-primary-foreground text-primary">
