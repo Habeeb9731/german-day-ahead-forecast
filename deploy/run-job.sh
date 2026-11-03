@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Runs one pipeline command on the server, pushes new forecast log entries, and alerts on failure.
 set -uo pipefail
-cd /opt/depower || exit 1
+cd "${DEPOWER_DIR:-/opt/depower}" || exit 1
 job="$1"
 retry_later=75  # the forecast isn't ready yet and a later timer will retry, so no alert
 
@@ -12,14 +12,18 @@ detail=$(printf '%s\n' "$output" | tail -n 1 | cut -c1-400)
 
 # Pushing the log needs a git checkout with a deploy key. Without one, the log stays on this server.
 if [ -d .git ]; then
+    # The poller also writes to this checkout, so take turns and keep its unstaged changes aside.
+    exec 9>.git/depower.lock
+    flock -w 120 9
     git add data/forecast_log
     if ! git diff --cached --quiet; then
         git commit -q -m "chore(forecast): add log entry from $job"
-        if ! { git pull -q --rebase origin main && git push -q origin main; }; then
+        if ! { git pull -q --rebase --autostash origin main && git push -q origin main; }; then
             [ "$status" -eq 0 ] && detail="the forecast log could not be pushed to GitHub"
             [ "$status" -eq 0 ] && status=1
         fi
     fi
+    exec 9>&-
 fi
 
 if [ "$status" -ne 0 ] && [ "$status" -ne "$retry_later" ] && [ -n "${EPF_ALERT_WEBHOOK:-}" ]; then

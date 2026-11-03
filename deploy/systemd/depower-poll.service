@@ -1,0 +1,9 @@
+[Unit]
+Description=DE-LU forecast: record when SMARD publishes (temporary)
+After=docker.service network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/opt/depower/deploy/poll-availability.sh
+TimeoutStartSec=10min

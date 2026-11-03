@@ -292,7 +292,8 @@ export function TomorrowView() {
                     {t("{count} of {total}", { count: hours.filter((h) => h.p50 < stats.average).length, total: hours.length })}
                   </span>
                 </li>
-                {latest && (
+                {/* Old backtest days don't belong next to a live forecast. */}
+                {latest && (exampleDate || !recordIsBacktest) && (
                   <li className="flex items-center justify-between gap-2 py-2">
                     <span>{t("{date} actual average", { date: shortDateLabel(latest.date) })}</span>
                     <span className="font-medium tabular-nums">{fmt(latest.actual)}</span>

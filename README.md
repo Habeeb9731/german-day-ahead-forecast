@@ -77,7 +77,7 @@ Raw responses are kept unchanged and stored as a new version only when they chan
 
 ### Daily schedule
 
-Systemd timers on a Hetzner server run the jobs in containers. GitHub Actions runs CI and a temporary publication-time poller. Scheduling moved to the server because the cutoff is strict, GitHub's scheduled runs can start late, and the database needs permanent storage.
+Systemd timers on a Hetzner server run the jobs in containers. GitHub Actions runs CI and a daily outside check of the public site. A temporary poller on the server measures when SMARD really publishes. Scheduling moved to the server because the cutoff is strict, GitHub's scheduled runs can start late, and the database needs permanent storage.
 
 | Berlin time | Job |
 |---|---|
