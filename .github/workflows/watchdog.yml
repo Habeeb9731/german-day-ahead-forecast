@@ -1,0 +1,35 @@
+# Checks the public site from outside the server. If a check fails, GitHub emails the repo owner,
+# which also covers the server or tunnel being down.
+name: Watchdog
+
+on:
+  schedule:
+    # Times are UTC. 11:00 is after the 11:30 Berlin cutoff in both winter and summer.
+    - cron: "0 11 * * *"
+    # 20:45 UTC is after the 20:35 Berlin scoring run in winter (19:35 UTC) and summer (18:35 UTC).
+    - cron: "45 20 * * *"
+  workflow_dispatch:
+    inputs:
+      check:
+        description: What to check
+        type: choice
+        options: [reach, forecast, score]
+        default: reach
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+      - name: Check the public site
+        working-directory: pipeline
+        env:
+          CHECK: ${{ inputs.check || (github.event.schedule == '0 11 * * *' && 'forecast') || 'score' }}
+        run: uv run --frozen epf watchdog "$CHECK"

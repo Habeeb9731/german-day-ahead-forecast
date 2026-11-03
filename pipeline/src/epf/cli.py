@@ -31,7 +31,7 @@ from epf.features.asof import DataStore
 from epf.features.build import build_range, feature_columns
 from epf.ingest import availability, holidays_de, openmeteo, smard
 from epf.ingest.http import make_client
-from epf.live import daily, export, forecast_log, score
+from epf.live import daily, export, forecast_log, score, watchdog
 from epf.models import artifact, backtest
 from epf.quality.checks import run_checks, write_report
 from epf.timeutil import utcnow
@@ -293,6 +293,16 @@ def cmd_verify_log(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_watchdog(args: argparse.Namespace) -> int:
+    try:
+        print(f"OK: {watchdog.run(args.check, args.site, utcnow())}")
+    except watchdog.WatchdogFailure as exc:
+        # GitHub shows this line on the failed run and in its notification.
+        print(f"::error title=depower watchdog::{exc}")
+        return 1
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="epf", description=__doc__)
     parser.add_argument("-v", "--verbose", action="store_true")
@@ -340,6 +350,11 @@ def build_parser() -> argparse.ArgumentParser:
 
     p = sub.add_parser("verify-log", help="check the forecast log's hash chain")
     p.set_defaults(func=cmd_verify_log)
+
+    p = sub.add_parser("watchdog", help="check the public site from outside the server")
+    p.add_argument("check", choices=["forecast", "score", "reach"])
+    p.add_argument("--site", default=watchdog.DEFAULT_SITE)
+    p.set_defaults(func=cmd_watchdog)
 
     p = sub.add_parser("poll-availability", help="log when SMARD files change (no market values)")
     p.set_defaults(func=cmd_poll)
