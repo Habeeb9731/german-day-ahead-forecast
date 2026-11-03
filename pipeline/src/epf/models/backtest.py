@@ -76,7 +76,11 @@ def walk_forward(data: pd.DataFrame, start: date, end: date) -> tuple[pd.DataFra
     out = pd.concat(frames, ignore_index=True)
     for name, col in BASELINES.items():
         out[name] = data.set_index("valid_from_utc")[col].reindex(out["valid_from_utc"]).to_numpy()
-    return out, pd.concat(importances, axis=1).mean(axis=1), lgbm.model_version(features)
+    return (
+        out,
+        pd.concat(importances, axis=1).mean(axis=1).sort_values(ascending=False),
+        lgbm.model_version(features),
+    )
 
 
 def baseline_intervals(data: pd.DataFrame, predictions: pd.DataFrame) -> pd.DataFrame:

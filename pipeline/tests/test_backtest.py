@@ -75,6 +75,11 @@ def test_window_respected(run):
     assert predictions["delivery_date"].max() == date(2025, 7, 19)
 
 
+def test_importance_is_sorted(run):
+    _, _, importance, _ = run
+    assert importance.is_monotonic_decreasing
+
+
 def test_quantiles_do_not_cross(run):
     _, predictions, _, _ = run
     assert (predictions["p10"] <= predictions["p50"]).all()

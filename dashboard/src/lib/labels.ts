@@ -55,6 +55,19 @@ const EXACT: Record<string, string> = {
   wx_wind_cubed_mean: "Wind power proxy (wind speed cubed)",
   wx_wind_spread: "Wind speed spread across locations",
   wx_lead_hours: "Weather forecast lead time",
+  wind_on_forecast_prev: "Yesterday's onshore wind forecast",
+  wind_off_forecast_prev: "Yesterday's offshore wind forecast",
+  pv_forecast_prev: "Yesterday's solar forecast",
+  load_actual_d2: "Actual demand, 2 days ago",
+  load_actual_d2_mean: "Actual demand, 2 days ago, daily average",
+  residual_actual_d2: "Residual load, 2 days ago",
+  residual_actual_d2_mean: "Residual load, 2 days ago, daily average",
+  wind_on_actual_d2: "Onshore wind output, 2 days ago",
+  wind_on_actual_d2_mean: "Onshore wind output, 2 days ago, daily average",
+  wind_off_actual_d2: "Offshore wind output, 2 days ago",
+  wind_off_actual_d2_mean: "Offshore wind output, 2 days ago, daily average",
+  pv_actual_d2: "Solar output, 2 days ago",
+  pv_actual_d2_mean: "Solar output, 2 days ago, daily average",
 };
 
 /** Plain-language feature name. Unknown names fall back to the raw ID rather than a guess. */
