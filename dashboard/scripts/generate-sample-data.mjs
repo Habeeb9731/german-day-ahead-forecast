@@ -144,4 +144,5 @@ write("tomorrow.json", tomorrow);
 write("track_record.json", { kind: "live_track_record", is_sample: true, generated_at_utc: iso(now), hours: track });
 write("backtest.json", backtest);
 write("backtest_track.json", { kind: "backtest_track_record", is_sample: true, generated_at_utc: iso(now), hours: track });
+write("backtest_recent.json", { kind: "backtest_track_record", is_sample: true, generated_at_utc: iso(now), hours: track.slice(-24 * 70) });
 console.log("Wrote SYNTHETIC sample data to sample-data/");

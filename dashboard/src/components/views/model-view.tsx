@@ -1,48 +1,68 @@
 "use client";
 
-import { CheckCircle2, Scale, XCircle } from "lucide-react";
+import { Calculator, CloudSun, Gauge, History, Zap } from "lucide-react";
 
-import { ChartOrTable } from "@/components/chart-or-table";
+import { ComparisonBars } from "@/components/charts/comparison-bars";
 import { ImportanceChart } from "@/components/charts/importance-chart";
 import { SeriesLineChart } from "@/components/charts/series-line-chart";
 import {
   EmptyState,
   ErrorState,
-  LoadingState,
+  GridSkeleton,
   PageHeader,
   SampleBanner,
+  WidgetTitle,
 } from "@/components/page-states";
-import { StatCard } from "@/components/stat-card";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { featureLabel, fmt, MODEL_LABELS, regimeLabel } from "@/lib/labels";
+import { CountUp } from "@/components/count-up";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { t } from "@/lib/i18n";
+import { featureLabel, fmt, modelLabel, pct, regimeLabel } from "@/lib/labels";
 import { dateLabel, dateTimeLabel } from "@/lib/time";
-import type { BacktestFile, ModelName, ScoreSet, Significance } from "@/lib/types";
+import type { BacktestFile, ModelName, ScoreSet } from "@/lib/types";
 import { useData } from "@/lib/use-data";
+import { useEntranceWindow } from "@/lib/use-entrance";
+import { cn } from "@/lib/utils";
 
 const MODELS: ModelName[] = ["model", "baseline_prev_day", "baseline_prev_week"];
-const SERIES = [
-  { key: "model", label: MODEL_LABELS.model, color: "var(--chart-1)" },
-  { key: "baseline_prev_day", label: MODEL_LABELS.baseline_prev_day, color: "var(--chart-3)", dashed: true },
-  { key: "baseline_prev_week", label: MODEL_LABELS.baseline_prev_week, color: "var(--chart-4)", dashed: true },
-];
+function series() {
+  return [
+    { key: "model", label: modelLabel("model"), color: "var(--chart-1)" },
+    { key: "baseline_prev_day", label: modelLabel("baseline_prev_day"), color: "var(--chart-3)", dashed: true },
+    { key: "baseline_prev_week", label: modelLabel("baseline_prev_week"), color: "var(--chart-4)", dashed: true },
+  ];
+}
+const COLORS: Record<ModelName, string> = {
+  model: "var(--chart-1)",
+  baseline_prev_day: "var(--chart-3)",
+  baseline_prev_week: "var(--chart-4)",
+};
+function steps() {
+  return [
+    { icon: History, title: t("Recent prices"), text: t("Yesterday and earlier") },
+    { icon: Zap, title: t("Demand forecast"), text: t("Published before the cutoff") },
+    { icon: CloudSun, title: t("Weather forecast"), text: t("Six places in Germany") },
+    { icon: Calculator, title: t("Three estimates"), text: t("Low, middle and high") },
+  ];
+}
 
 function Shell({ children }: { children: React.ReactNode }) {
   return (
     <div className="space-y-4">
-      <PageHeader title="Model">
-        How the model works, how it performed in a backtest, and where it falls short.
-      </PageHeader>
+      <PageHeader title={t("Model")} />
       {children}
     </div>
+  );
+}
+
+function Widget({ className, children }: { className?: string; children: React.ReactNode }) {
+  return (
+    <Card size="sm" className={cn("min-w-0 gap-3", className)}>
+      <CardContent className="flex h-full flex-col gap-3">{children}</CardContent>
+    </Card>
   );
 }
 
@@ -62,7 +82,7 @@ function MaeTable({ head, rows }: { head: string; rows: ReturnType<typeof maeRow
         <TableRow>
           <TableHead>{head}</TableHead>
           {MODELS.map((m) => (
-            <TableHead key={m} className="text-right">{MODEL_LABELS[m]}</TableHead>
+            <TableHead key={m} className="text-right">{modelLabel(m)}</TableHead>
           ))}
         </TableRow>
       </TableHeader>
@@ -80,39 +100,148 @@ function MaeTable({ head, rows }: { head: string; rows: ReturnType<typeof maeRow
   );
 }
 
-function Verdict({ name, s }: { name: "baseline_prev_day" | "baseline_prev_week"; s: Significance }) {
-  const Icon = s.verdict === "model better" ? CheckCircle2 : s.verdict === "baseline better" ? XCircle : Scale;
-  const title =
-    s.verdict === "model better"
-      ? `The model beat “${MODEL_LABELS[name]}”`
-      : s.verdict === "baseline better"
-        ? `The model lost to “${MODEL_LABELS[name]}”`
-        : `No clear winner against “${MODEL_LABELS[name]}”`;
-  const delta = s.mae_difference_model_minus_baseline;
+function shortRegime(key: string): string {
+  const high = key.match(/^extreme_high_top5pct_ge_(-?[\d.]+)$/);
+  if (high) return t("Top 5% of prices");
+  const low = key.match(/^extreme_low_bottom5pct_le_(-?[\d.]+)$/);
+  if (low) return t("Bottom 5% of prices");
   return (
-    <Alert variant={s.verdict === "baseline better" ? "destructive" : "default"}>
-      <Icon aria-hidden />
-      <AlertTitle>{title}</AlertTitle>
-      <AlertDescription>
-        Its MAE was {fmt(Math.abs(delta))} EUR/MWh {delta < 0 ? "lower" : "higher"} (95% interval for
-        the difference: {fmt(s.ci95_low)} to {fmt(s.ci95_high)}, resampling whole days).
-      </AlertDescription>
-    </Alert>
+    { negative_price: t("Negative prices"), normal_middle90pct: t("Middle 90%"), dst_change_days: t("Clock-change days") }[key] ??
+    regimeLabel(key)
+  );
+}
+
+function HowItWorks() {
+  return (
+    <Widget className="md:col-span-2 xl:col-span-7">
+      <WidgetTitle>{t("How it works")}</WidgetTitle>
+      <ol className="grid flex-1 gap-3 sm:grid-cols-2">
+        {steps().map(({ icon: Icon, title, text }) => (
+          <li key={title} className="flex items-center gap-3 rounded-2xl bg-muted p-3">
+            <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-card">
+              <Icon className="size-4" aria-hidden />
+            </span>
+            <div className="min-w-0">
+              <p className="text-sm font-medium">{title}</p>
+              <p className="text-xs text-muted-foreground">{text}</p>
+            </div>
+          </li>
+        ))}
+      </ol>
+      <p className="flex items-center gap-2 text-sm">
+        <Gauge className="size-4 shrink-0 text-muted-foreground" aria-hidden />
+        {t("Every forecast is made by 11:30 Berlin time, before the 12:00 auction closes.")}
+      </p>
+    </Widget>
+  );
+}
+
+function Details({ report }: { report: BacktestFile | null }) {
+  return (
+    <Card size="sm" className="min-w-0 py-1">
+      <CardContent>
+        <Accordion type="multiple">
+          {report && (
+            <AccordionItem value="metrics">
+              <AccordionTrigger>{t("All backtest metrics")}</AccordionTrigger>
+              <AccordionContent className="space-y-3">
+                <div className="rounded-2xl border">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>{t("Forecast")}</TableHead>
+                        <TableHead className="text-right">MAE</TableHead>
+                        <TableHead className="text-right">RMSE</TableHead>
+                        <TableHead className="text-right">sMAPE</TableHead>
+                        <TableHead className="text-right">{t("P10–P90 coverage")}</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {MODELS.map((m) => {
+                        const s = report.overall[m];
+                        return (
+                          <TableRow key={m}>
+                            <TableCell>{modelLabel(m)}</TableCell>
+                            <TableCell className="text-right tabular-nums">{fmt(s?.mae)}</TableCell>
+                            <TableCell className="text-right tabular-nums">{fmt(s?.rmse)}</TableCell>
+                            <TableCell className="text-right tabular-nums">{pct(s?.smape)}</TableCell>
+                            <TableCell className="text-right tabular-nums">{pct(s?.coverage_p10_p90)}</TableCell>
+                          </TableRow>
+                        );
+                      })}
+                    </TableBody>
+                  </Table>
+                </div>
+                <p className="text-muted-foreground">
+                  {t("MAE and RMSE are in EUR/MWh. sMAPE is unstable near zero prices, so read it alongside MAE. Baseline ranges come from their own errors over the previous 90 days. Difference from the model, with a 95% interval from resampling whole days:")}{" "}
+                  {(["baseline_prev_day", "baseline_prev_week"] as const)
+                    .map((b) => {
+                      const s = report.significance[b];
+                      return `${modelLabel(b)}: ${fmt(s.mae_difference_model_minus_baseline)} (${t("{low} to {high}", { low: fmt(s.ci95_low), high: fmt(s.ci95_high) })})`;
+                    })
+                    .join("; ")}
+                  .{" "}
+                  {t("Trained from {start}, retrained monthly with an expanding window. Run on {run}. Version {version}.", { start: dateLabel(report.train_start), run: dateTimeLabel(report.generated_at_utc), version: report.model_version })}
+                </p>
+              </AccordionContent>
+            </AccordionItem>
+          )}
+          {report?.calibration && (
+            <AccordionItem value="calibration">
+              <AccordionTrigger>{t("How the range is calibrated")}</AccordionTrigger>
+              <AccordionContent className="text-muted-foreground">
+                {t("The raw P10–P90 range covered only {coverage} of prices, so each month it is widened or narrowed using errors from the previous {days} days. This was added after seeing that first result, so the calibrated coverage may be slightly flattering. It does not change P50 or MAE.", { coverage: pct(report.calibration.coverage_before), days: report.calibration.holdout_days })}
+              </AccordionContent>
+            </AccordionItem>
+          )}
+          <AccordionItem value="fail">
+            <AccordionTrigger>{t("Where it can fail")}</AccordionTrigger>
+            <AccordionContent>
+              <ul className="grid gap-3 text-muted-foreground md:grid-cols-2">
+                <li><strong className="font-medium text-foreground">{t("Sudden shocks.")}</strong> {t("Plant outages, fuel price jumps and cross-border events aren't in its inputs.")}</li>
+                <li><strong className="font-medium text-foreground">{t("Extreme prices.")}</strong> {t("Very high and very negative prices are rare, so there are few examples to learn from.")}</li>
+                <li><strong className="font-medium text-foreground">{t("Weather errors.")}</strong> {t("A wrong wind or solar forecast carries straight through to the price forecast.")}</li>
+                <li><strong className="font-medium text-foreground">{t("Hourly detail.")}</strong> {t("The market clears every 15 minutes, but this model forecasts hourly averages.")}</li>
+                <li><strong className="font-medium text-foreground">{t("Backtest optimism.")}</strong> {t("Early archived weather comes from a newer model version than was running at the time.")}</li>
+                <li><strong className="font-medium text-foreground">{t("Left-out data.")}</strong> {t("Delivery-day wind and solar forecasts appear to arrive after the auction closes, so they aren't used.")}</li>
+              </ul>
+            </AccordionContent>
+          </AccordionItem>
+        </Accordion>
+      </CardContent>
+    </Card>
   );
 }
 
 export function ModelView() {
   const state = useData<BacktestFile>("backtest.json");
-  if (state.status === "loading") return <Shell><LoadingState /></Shell>;
+  useEntranceWindow(state.status !== "loading");
+  if (state.status === "loading") {
+    return (
+      <Shell>
+        <GridSkeleton
+          cells={[
+            "h-60 xl:col-span-4",
+            "h-60 xl:col-span-5",
+            "h-60 md:col-span-2 xl:col-span-3",
+            "h-[404px] md:col-span-2 xl:col-span-8",
+            "h-[404px] md:col-span-2 xl:col-span-4",
+            "h-[404px] md:col-span-2 xl:col-span-7",
+            "h-[404px] md:col-span-2 xl:col-span-5",
+          ]}
+        />
+      </Shell>
+    );
+  }
   if (state.status === "error") return <Shell><ErrorState message={state.message} /></Shell>;
-  const explanation = <Explanation />;
   if (state.status === "empty") {
     return (
       <Shell>
-        <EmptyState title="Backtest results are not available yet">
-          They appear here once the walk-forward backtest has been run on real data.
+        <EmptyState title={t("Backtest results are not available yet")}>
+          {t("They appear here once the walk-forward backtest has been run on real data.")}
         </EmptyState>
-        {explanation}
+        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-7"><HowItWorks /></div>
+        <Details report={null} />
       </Shell>
     );
   }
@@ -121,246 +250,149 @@ export function ModelView() {
   const hourRows = maeRows(d.by_hour).sort((a, b) => Number(a.key) - Number(b.key));
   const monthRows = maeRows(d.by_month).sort((a, b) => a.key.localeCompare(b.key));
   const importance = Object.entries(d.feature_importance)
-    .slice(0, 15)
+    .slice(0, 8)
     .map(([key, share]) => ({ name: featureLabel(key), share: share * 100 }));
   const worstHour = [...hourRows].sort((a, b) => (b.model ?? 0) - (a.model ?? 0))[0];
-  const regimes = Object.entries(d.by_regime).filter(([, set]) => set.model);
+  // When the bottom 5% is exactly the negative-price hours, showing both would repeat one row.
+  const negative = d.by_regime.negative_price?.model;
+  const regimes = Object.entries(d.by_regime).filter(
+    ([key, set]) =>
+      set.model &&
+      key !== "all" &&
+      !(
+        key.startsWith("extreme_low") &&
+        negative?.n === set.model.n &&
+        negative?.mae === set.model.mae
+      ),
+  );
+  const m = d.overall.model;
+  const previous = d.overall.baseline_prev_day;
+  const change = m && previous ? 100 * (1 - m.mae / previous.mae) : null;
+  const coverage = m?.coverage_p10_p90 ?? 0;
+  const verdicts = Object.values(d.significance).map((s) => s.verdict);
+  const beatBoth = verdicts.every((v) => v === "model better");
+  const lost = verdicts.some((v) => v === "baseline better");
+  const verdictLabel = beatBoth ? t("Beat both baselines") : lost ? t("Lost to a baseline") : t("No clear winner");
 
   return (
     <Shell>
       {d.is_sample && <SampleBanner />}
-      <div className="grid gap-4 sm:grid-cols-3">
-        {MODELS.map((m) => (
-          <StatCard
-            key={m}
-            accent={m === "model"}
-            label={`${MODEL_LABELS[m]}, MAE`}
-            value={fmt(d.overall[m]?.mae)}
-            unit="EUR/MWh"
-            detail={`P10–P90 coverage ${fmt(d.overall[m]?.coverage_p10_p90, 1)}% (target 80%)`}
+      <div className="entrance grid gap-3 md:grid-cols-2 xl:grid-cols-12">
+        <Card size="sm" className="min-w-0 gap-0 bg-accent text-accent-foreground xl:col-span-4">
+          <CardContent className="flex h-full flex-col gap-4">
+            <div className="flex min-h-7 items-center justify-between gap-2">
+              <h2 className="text-sm font-medium">{t("Average error")}</h2>
+              <span className="rounded-full bg-accent-foreground px-2 py-0.5 text-xs font-medium text-accent">{t("Backtest")}</span>
+            </div>
+            <p className="font-heading text-6xl tracking-tight tabular-nums">
+              {m ? <CountUp value={m.mae} format={fmt} /> : t("n/a")}
+              <span className="ml-2 text-sm tracking-normal">EUR/MWh</span>
+            </p>
+            {change !== null && (
+              <p className="text-sm">
+                {t(change >= 0 ? "{pct} lower than the previous-day baseline" : "{pct} higher than the previous-day baseline", { pct: pct(Math.abs(change), 0) })}
+              </p>
+            )}
+            <p className="mt-auto text-xs">
+              {t("{n} simulated days, {from} to {to}. Not live results.", { n: d.days_scored, from: dateLabel(d.test_start), to: dateLabel(d.test_end) })}
+            </p>
+          </CardContent>
+        </Card>
+
+        <Widget className="xl:col-span-5">
+          <WidgetTitle action={<Badge variant={lost ? "destructive" : "secondary"}>{verdictLabel}</Badge>}>
+            {t("Model vs. baselines")}
+          </WidgetTitle>
+          <ComparisonBars
+            data={MODELS.map((name) => ({ name: modelLabel(name), value: d.overall[name]?.mae ?? 0, color: COLORS[name] }))}
           />
-        ))}
-      </div>
-      <Card>
-        <CardHeader>
-          <CardTitle>Backtest results</CardTitle>
-          <CardDescription>
-            Walk-forward test on {d.days_scored} days, {dateLabel(d.test_start)} to{" "}
-            {dateLabel(d.test_end)}. These are simulated past forecasts, not live results. Retrained{" "}
-            {d.retrain}. Run on {dateTimeLabel(d.generated_at_utc)}.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="rounded-md border">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Forecast</TableHead>
-                  <TableHead className="text-right">MAE</TableHead>
-                  <TableHead className="text-right">RMSE</TableHead>
-                  <TableHead className="text-right">sMAPE</TableHead>
-                  <TableHead className="text-right">P10–P90 coverage</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {MODELS.map((m) => {
-                  const s = d.overall[m];
-                  return (
-                    <TableRow key={m}>
-                      <TableCell>{MODEL_LABELS[m]}</TableCell>
-                      <TableCell className="text-right tabular-nums">{fmt(s?.mae)}</TableCell>
-                      <TableCell className="text-right tabular-nums">{fmt(s?.rmse)}</TableCell>
-                      <TableCell className="text-right tabular-nums">{fmt(s?.smape, 1)}%</TableCell>
-                      <TableCell className="text-right tabular-nums">{fmt(s?.coverage_p10_p90, 1)}%</TableCell>
-                    </TableRow>
-                  );
-                })}
-              </TableBody>
-            </Table>
+          <ul className="mt-auto flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
+            {MODELS.map((name) => (
+              <li key={name} className="flex items-center gap-1.5">
+                <span className="size-2.5 rounded-[3px]" style={{ backgroundColor: COLORS[name] }} aria-hidden />
+                {modelLabel(name)}
+              </li>
+            ))}
+          </ul>
+        </Widget>
+
+        <Widget className="md:col-span-2 xl:col-span-3">
+          <WidgetTitle>{t("Range coverage")}</WidgetTitle>
+          <p className="font-heading text-4xl tracking-tight tabular-nums">{pct(coverage)}</p>
+          <div
+            className="relative h-3 rounded-full bg-muted"
+            role="img"
+            aria-label={t("P10 to P90 coverage {value} percent, target 80 percent", { value: fmt(coverage, 1) })}
+          >
+            <div className="h-full rounded-full bg-accent" style={{ width: `${Math.min(100, coverage)}%` }} />
+            <span className="absolute -top-1 -bottom-1 left-[80%] w-0.5 rounded-full bg-foreground" aria-hidden />
           </div>
-          <p className="text-sm text-muted-foreground">
-            MAE and RMSE are in EUR/MWh. The P10–P90 target is 80%. Baselines give single numbers, so
-            their ranges come from their own errors over the previous 90 days. sMAPE is unstable when
-            prices are near zero, so read it alongside MAE.
-          </p>
+          <p className="text-xs text-muted-foreground">{t("Target 80%, marked on the bar")}</p>
           {d.calibration && (
-            <p className="text-sm text-muted-foreground">
-              The model&apos;s raw P10–P90 range covered only {fmt(d.calibration.coverage_before, 1)}% of
-              prices, so each month it is recalibrated using errors from the previous{" "}
-              {d.calibration.holdout_days} days. The method was added after seeing that first result, so
-              the calibrated coverage above may be slightly flattering. It does not change P50 or MAE.
+            <p className="mt-auto rounded-2xl bg-muted p-3 text-xs">
+              {t("{value} before calibration", { value: pct(d.calibration.coverage_before) })}
             </p>
           )}
-          <div className="grid gap-3 md:grid-cols-2">
-            <Verdict name="baseline_prev_day" s={d.significance.baseline_prev_day} />
-            <Verdict name="baseline_prev_week" s={d.significance.baseline_prev_week} />
-          </div>
-        </CardContent>
-      </Card>
+        </Widget>
 
-      <div className="grid gap-4 lg:grid-cols-2">
-        <Card className="min-w-0">
-          <CardHeader>
-            <CardTitle>MAE by hour of day</CardTitle>
-            <CardDescription>
-              EUR/MWh, Europe/Berlin. The model&apos;s largest errors are at {worstHour?.key}:00.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <ChartOrTable
-              label="MAE by hour of day"
-              chart={<SeriesLineChart data={hourRows} xKey="key" unit="EUR/MWh" series={SERIES} />}
-              table={<MaeTable head="Hour" rows={hourRows} />}
-            />
-          </CardContent>
-        </Card>
-        <Card className="min-w-0">
-          <CardHeader>
-            <CardTitle>MAE by month</CardTitle>
-            <CardDescription>EUR/MWh.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <ChartOrTable
-              label="MAE by month"
-              chart={<SeriesLineChart data={monthRows} xKey="key" unit="EUR/MWh" series={SERIES} />}
-              table={<MaeTable head="Month" rows={monthRows} />}
-            />
-          </CardContent>
-        </Card>
+        <Widget className="md:col-span-2 xl:col-span-8">
+          <Tabs defaultValue="hour" className="min-w-0 gap-3">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <WidgetTitle>{t("Error over time")}</WidgetTitle>
+              <TabsList aria-label={t("{label}: choose a view", { label: t("Error over time") })}>
+                <TabsTrigger value="hour">{t("By hour")}</TabsTrigger>
+                <TabsTrigger value="month">{t("By month")}</TabsTrigger>
+                <TabsTrigger value="table">{t("Table")}</TabsTrigger>
+              </TabsList>
+            </div>
+            <TabsContent value="hour" className="min-w-0">
+              <SeriesLineChart data={hourRows} xKey="key" unit="EUR/MWh" series={series()} />
+            </TabsContent>
+            <TabsContent value="month" className="min-w-0">
+              <SeriesLineChart data={monthRows} xKey="key" unit="EUR/MWh" series={series()} />
+            </TabsContent>
+            <TabsContent value="table" className="min-w-0">
+              <div className="h-72 space-y-3 overflow-auto rounded-2xl border" tabIndex={0} role="region" aria-label={t("{label}, data table", { label: t("Error over time") })}>
+                <MaeTable head={t("Berlin hour")} rows={hourRows} />
+                <MaeTable head={t("Month")} rows={monthRows} />
+              </div>
+            </TabsContent>
+          </Tabs>
+          <p className="text-xs text-muted-foreground">
+            {t("MAE in EUR/MWh. Largest model errors at {hour}:00 Berlin time.", { hour: worstHour?.key ?? "" })}
+          </p>
+        </Widget>
+
+        <Widget className="md:col-span-2 xl:col-span-4">
+          <WidgetTitle>{t("Unusual prices")}</WidgetTitle>
+          <div className="grid grid-cols-[1fr_auto_auto] gap-x-4 text-xs text-muted-foreground">
+            <span>{t("Period")}</span>
+            <span className="text-right">MAE</span>
+            <span className="w-14 text-right">{t("In range")}</span>
+          </div>
+          <ul className="flex-1 divide-y text-sm">
+            {regimes.map(([key, set]) => (
+              <li key={key} className="grid grid-cols-[1fr_auto_auto] items-center gap-x-4 py-2.5" title={regimeLabel(key)}>
+                <span className="min-w-0">{shortRegime(key)}</span>
+                <span className="font-heading text-base tabular-nums">{fmt(set.model?.mae, 1)}</span>
+                <span className="w-14 text-right tabular-nums text-muted-foreground">{pct(set.model?.coverage_p10_p90, 0)}</span>
+              </li>
+            ))}
+          </ul>
+          <p className="text-xs text-muted-foreground">{t("Model only. Grouped by actual price, after the fact.")}</p>
+        </Widget>
+
+        <HowItWorks />
+
+        <Widget className="md:col-span-2 xl:col-span-5">
+          <WidgetTitle>{t("What it relies on most")}</WidgetTitle>
+          <ImportanceChart data={importance} />
+          <p className="text-xs text-muted-foreground">
+            {t("Share of split gain, top {n} of {total}. Not proof of what moves prices.", { n: importance.length, total: d.n_features })}
+          </p>
+        </Widget>
       </div>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Errors in unusual price periods</CardTitle>
-          <CardDescription>
-            These slices are chosen using actual prices, after the fact, to show where forecasts
-            struggle. P10–P90 coverage is for the model.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="rounded-md border">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Period</TableHead>
-                  <TableHead className="text-right">Hours</TableHead>
-                  {MODELS.map((m) => (
-                    <TableHead key={m} className="text-right">{MODEL_LABELS[m]}</TableHead>
-                  ))}
-                  <TableHead className="text-right">Coverage</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {regimes.map(([key, set]) => (
-                  <TableRow key={key}>
-                    <TableCell className="whitespace-normal">{regimeLabel(key)}</TableCell>
-                    <TableCell className="text-right tabular-nums">{set.model?.n}</TableCell>
-                    {MODELS.map((m) => (
-                      <TableCell key={m} className="text-right tabular-nums">{fmt(set[m]?.mae)}</TableCell>
-                    ))}
-                    <TableCell className="text-right tabular-nums">{fmt(set.model?.coverage_p10_p90, 1)}%</TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>What the model relies on most</CardTitle>
-          <CardDescription>
-            Share of split gain, top {importance.length} of {d.n_features} features. This shows what
-            the model uses, not what causes prices to move.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <ChartOrTable
-            label="Feature importance"
-            chart={<ImportanceChart data={importance} />}
-            table={
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Feature</TableHead>
-                    <TableHead className="text-right">Share</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {importance.map((f) => (
-                    <TableRow key={f.name}>
-                      <TableCell className="whitespace-normal">{f.name}</TableCell>
-                      <TableCell className="text-right tabular-nums">{fmt(f.share, 1)}%</TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            }
-          />
-        </CardContent>
-      </Card>
-
-      {explanation}
-      <p className="text-xs text-muted-foreground">Model version {d.model_version}.</p>
+      <Details report={d} />
     </Shell>
-  );
-}
-
-function Explanation() {
-  return (
-    <div className="grid gap-4 lg:grid-cols-2">
-      <Card className="min-w-0">
-        <CardHeader>
-          <CardTitle>How it works</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3 text-sm">
-          <p>
-            Each morning by 11:30 Berlin time, half an hour before the auction closes, the model predicts
-            every hour of the next day using only what was already public.
-          </p>
-          <p>
-            It looks at recent prices, the official demand forecast, the calendar and holidays, and a
-            weather forecast for six places across Germany. Wind and sun matter because they push
-            cheaper power onto the grid.
-          </p>
-          <p>
-            It is a set of gradient-boosted decision trees (LightGBM). Three versions give a low (P10),
-            middle (P50) and high (P90) estimate, which form the range on the chart.
-          </p>
-          <p>
-            Grid operators&apos; wind and solar forecasts for the delivery day are left out, because
-            they are published after the auction closes. Using them would flatter the backtest.
-          </p>
-        </CardContent>
-      </Card>
-      <Card className="min-w-0">
-        <CardHeader>
-          <CardTitle>Where it can fail</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3 text-sm">
-          <p>
-            <strong className="font-medium">Sudden shocks.</strong> Plant outages, fuel price jumps and
-            cross-border events aren&apos;t in its inputs, so it can only react through later prices.
-          </p>
-          <p>
-            <strong className="font-medium">Extreme prices.</strong> Very high and very negative prices
-            are rare, leaving few examples to learn from. The table above shows the size of this effect.
-          </p>
-          <p>
-            <strong className="font-medium">Weather errors.</strong> A wrong wind or solar forecast
-            carries straight through to the price forecast.
-          </p>
-          <p>
-            <strong className="font-medium">Hourly detail.</strong> The market now clears every 15
-            minutes, but this model forecasts hourly averages, so it misses swings within an hour.
-          </p>
-          <p>
-            <strong className="font-medium">Backtest optimism.</strong> Early archived weather forecasts
-            come from a newer model version than was running at the time, which may flatter results.
-          </p>
-        </CardContent>
-      </Card>
-    </div>
   );
 }

@@ -41,7 +41,7 @@ export function SeriesLineChart({
     series.map((s) => [s.key, { label: s.label, color: s.color }]),
   );
   return (
-    <ChartContainer config={config} className="aspect-auto h-72 w-full">
+    <ChartContainer config={config} className="entrance-reveal-x aspect-auto h-72 w-full">
       <LineChart accessibilityLayer data={data} margin={{ left: 4, right: 8, top: 8 }}>
         <CartesianGrid vertical={false} />
         <XAxis

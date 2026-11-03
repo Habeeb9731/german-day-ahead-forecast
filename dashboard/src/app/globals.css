@@ -55,7 +55,7 @@
   --card-foreground: #0b1220;
   --popover: #ffffff;
   --popover-foreground: #0b1220;
-  --primary: #0f1f3d;
+  --primary: #000000;
   --primary-foreground: #ffffff;
   --secondary: #eef1f5;
   --secondary-foreground: #0f1a2e;
@@ -128,5 +128,50 @@
   }
   html {
     @apply font-sans;
+  }
+}
+/* Entrance motion plays once per page load. Shortly after a page loads, LanguageProvider sets
+   data-entered, which switches every effect off, so tabs and language changes never replay them. */
+@keyframes entrance-rise {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes entrance-bar {
+  from { transform: scaleY(0); }
+  to { transform: scaleY(1); }
+}
+@keyframes entrance-reveal-x {
+  from { clip-path: inset(0 100% 0 0); }
+  to { clip-path: inset(0 0 0 0); }
+}
+@keyframes entrance-reveal-up {
+  from { clip-path: inset(100% 0 0 0); }
+  to { clip-path: inset(0 0 0 0); }
+}
+.entrance > * {
+  animation: entrance-rise 0.45s cubic-bezier(0.22, 1, 0.36, 1) backwards;
+}
+.entrance > :nth-child(2) { animation-delay: 40ms; }
+.entrance > :nth-child(3) { animation-delay: 80ms; }
+.entrance > :nth-child(4) { animation-delay: 120ms; }
+.entrance > :nth-child(5) { animation-delay: 160ms; }
+.entrance > :nth-child(6) { animation-delay: 200ms; }
+.entrance > :nth-child(n + 7) { animation-delay: 240ms; }
+.entrance-bar {
+  transform-box: fill-box;
+  animation: entrance-bar 0.6s cubic-bezier(0.34, 1.3, 0.64, 1) backwards;
+}
+.entrance-reveal-x {
+  animation: entrance-reveal-x 0.8s cubic-bezier(0.45, 0, 0.2, 1) 0.1s backwards;
+}
+.entrance-reveal-up {
+  animation: entrance-reveal-up 0.7s cubic-bezier(0.45, 0, 0.2, 1) 0.1s backwards;
+}
+html[data-entered] :is(.entrance > *, .entrance-bar, .entrance-reveal-x, .entrance-reveal-up) {
+  animation: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  :is(.entrance > *, .entrance-bar, .entrance-reveal-x, .entrance-reveal-up) {
+    animation: none;
   }
 }

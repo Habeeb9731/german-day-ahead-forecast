@@ -1,8 +1,12 @@
+<img src="brand/final/depower-horizontal-mono-2563eb.svg" alt="depower" height="56">
+
 # German day-ahead electricity price forecast
 
 Every morning before the auction closes, this project forecasts the next day's hourly wholesale electricity prices for the DE-LU bidding zone. Once actual prices are published, it scores the forecast and adds it to a public track record.
 
 **Live dashboard: [depower.abdulhabeeb.com](https://depower.abdulhabeeb.com)**
+
+The dashboard is available in English and German, following the browser's language.
 
 ## Results
 

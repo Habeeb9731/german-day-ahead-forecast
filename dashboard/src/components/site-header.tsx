@@ -1,22 +1,27 @@
 "use client";
 
-import { BrainCircuit, CalendarClock, ChartLine, Info, PlugZap, Zap } from "lucide-react";
+import { BrainCircuit, CalendarClock, ChartLine, Info, PlugZap } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useLayoutEffect, useRef } from "react";
 
+import { LanguageToggle } from "@/components/language-toggle";
+import { Logo } from "@/components/logo";
 import { ModeToggle } from "@/components/mode-toggle";
 import { Separator } from "@/components/ui/separator";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
+import { t } from "@/lib/i18n";
 
-const LINKS = [
-  { href: "/", label: "Tomorrow", icon: CalendarClock },
-  { href: "/track-record/", label: "Track record", icon: ChartLine },
-  { href: "/model/", label: "Model", icon: BrainCircuit },
-  { href: "/ev-charging/", label: "EV charging", icon: PlugZap },
-  { href: "/about/", label: "About", icon: Info },
-];
+function links() {
+  return [
+    { href: "/", label: t("Tomorrow"), icon: CalendarClock },
+    { href: "/track-record/", label: t("Track record"), icon: ChartLine },
+    { href: "/model/", label: t("Model"), icon: BrainCircuit },
+    { href: "/ev-charging/", label: t("EV charging"), icon: PlugZap },
+    { href: "/about/", label: t("About"), icon: Info },
+  ];
+}
 
 const INDICATOR_MS = 620;
 const INDICATOR_EASING = "cubic-bezier(.45,0,.2,1)";
@@ -99,18 +104,16 @@ export function SiteHeader() {
       <header className="relative">
         <Link
           href="/"
-          className="absolute top-3 left-4 hidden h-14 items-center gap-2.5 lg:left-6 lg:flex"
+          aria-label={t("depower home")}
+          className="absolute top-3 left-4 hidden h-14 items-center lg:left-6 lg:flex"
         >
-          <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-accent text-accent-foreground">
-            <Zap className="size-4" aria-hidden />
-          </span>
-          <span className="font-heading text-lg font-medium">DE-LU day-ahead forecast</span>
+          <Logo />
         </Link>
       </header>
       <div className="pointer-events-none sticky top-3 z-40 mt-3 flex justify-center px-4">
         <nav
           ref={navRef}
-          aria-label="Main"
+          aria-label={t("Main")}
           className="pointer-events-auto relative isolate flex h-14 items-center gap-0.5 rounded-full border border-white/15 bg-black p-1.5 text-white shadow-lg sm:gap-1"
         >
           {/* Difference blending inverts each icon under the white indicator. The pill stays pure black
@@ -121,7 +124,7 @@ export function SiteHeader() {
             className="pointer-events-none absolute left-0 z-10 rounded-full bg-white opacity-0 mix-blend-difference"
           />
           <TooltipProvider delayDuration={150}>
-            {LINKS.map(({ href, label, icon: Icon }) => {
+            {links().map(({ href, label, icon: Icon }) => {
               const active = normalized === href;
               return (
                 <Tooltip key={href}>
@@ -131,7 +134,7 @@ export function SiteHeader() {
                       aria-label={label}
                       aria-current={active ? "page" : undefined}
                       className={cn(
-                        "flex size-11 items-center justify-center rounded-full transition-colors outline-none focus-visible:ring-2 focus-visible:ring-accent",
+                        "flex size-9 items-center justify-center rounded-full transition-colors sm:size-11 outline-none focus-visible:ring-2 focus-visible:ring-accent",
                         "[&>svg]:transition-transform [&>svg]:duration-350 [&>svg]:ease-[cubic-bezier(.34,1.8,.5,1)] hover:[&>svg]:-translate-y-0.5 hover:[&>svg]:scale-110 active:[&>svg]:scale-[.88] active:[&>svg]:duration-100 motion-reduce:[&>svg]:transition-none",
                         !active && "hover:bg-white/10",
                       )}
@@ -145,6 +148,7 @@ export function SiteHeader() {
             })}
           </TooltipProvider>
           <Separator orientation="vertical" className="mx-1 h-6! self-center! bg-white/20 sm:mx-1.5" />
+          <LanguageToggle />
           <ModeToggle />
         </nav>
       </div>

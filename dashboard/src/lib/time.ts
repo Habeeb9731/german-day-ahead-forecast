@@ -1,3 +1,5 @@
+import { getLang, intlLocale } from "./i18n";
+
 /** Timestamps arrive as naive UTC ISO strings. Everything shown to people is Europe/Berlin. */
 
 const TZ = "Europe/Berlin";
@@ -22,7 +24,9 @@ export function berlinHour(iso: string): number {
 function berlinOffsetName(d: Date): string {
   const parts = new Intl.DateTimeFormat("en-GB", { timeZone: TZ, timeZoneName: "short" });
   const name = parts.formatToParts(d).find((p) => p.type === "timeZoneName")?.value;
-  return name === "GMT+2" || name === "CEST" ? "CEST" : "CET";
+  const summer = name === "GMT+2" || name === "CEST";
+  if (getLang() === "de") return summer ? "MESZ" : "MEZ";
+  return summer ? "CEST" : "CET";
 }
 
 /** "14:00". On a daylight saving day the zone is added, so the repeated hour stays unambiguous. */
@@ -43,7 +47,7 @@ export function hourRangeLabel(startIso: string, hours: number): string {
 }
 
 export function dateLabel(isoDate: string): string {
-  return new Intl.DateTimeFormat("en-GB", {
+  return new Intl.DateTimeFormat(intlLocale(), {
     timeZone: "UTC",
     weekday: "short",
     day: "numeric",
@@ -53,7 +57,7 @@ export function dateLabel(isoDate: string): string {
 }
 
 export function shortDateLabel(isoDate: string): string {
-  return new Intl.DateTimeFormat("en-GB", {
+  return new Intl.DateTimeFormat(intlLocale(), {
     timeZone: "UTC",
     day: "numeric",
     month: "short",
@@ -62,7 +66,7 @@ export function shortDateLabel(isoDate: string): string {
 
 export function dateTimeLabel(iso: string): string {
   const d = parseUtc(iso);
-  const text = new Intl.DateTimeFormat("en-GB", {
+  const text = new Intl.DateTimeFormat(intlLocale(), {
     timeZone: TZ,
     day: "numeric",
     month: "short",

@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/chart";
 import { fmt } from "@/lib/labels";
 import { shortDateLabel } from "@/lib/time";
+import { intlLocale, t } from "@/lib/i18n";
 
 const unitTooltip = (color: string, label: string) => (
   <ChartTooltipContent
@@ -38,9 +39,9 @@ function Lollipop({ x = 0, y = 0, width = 0, height = 0 }: LollipopProps) {
 
 /** Daily forecast error as lollipops, one per scored day. */
 export function DailyErrorLollipops({ data }: { data: { date: string; mae: number }[] }) {
-  const config = { mae: { label: "Model MAE", color: "var(--chart-1)" } } satisfies ChartConfig;
+  const config = { mae: { label: t("Model MAE"), color: "var(--chart-1)" } } satisfies ChartConfig;
   return (
-    <ChartContainer config={config} className="aspect-auto h-36 w-full">
+    <ChartContainer config={config} className="entrance-reveal-up aspect-auto h-36 w-full">
       <BarChart accessibilityLayer data={data} margin={{ left: 0, right: 0, top: 12 }}>
         <XAxis
           dataKey="date"
@@ -49,12 +50,12 @@ export function DailyErrorLollipops({ data }: { data: { date: string; mae: numbe
           interval={0}
           tickMargin={6}
           tickFormatter={(v: string) =>
-            new Intl.DateTimeFormat("en-GB", { weekday: "narrow", timeZone: "UTC" }).format(
+            new Intl.DateTimeFormat(intlLocale(), { weekday: "narrow", timeZone: "UTC" }).format(
               new Date(`${v}T12:00:00Z`),
             )
           }
         />
-        <ChartTooltip cursor={false} content={unitTooltip("var(--color-mae)", "Model MAE")} />
+        <ChartTooltip cursor={false} content={unitTooltip("var(--color-mae)", t("Model MAE"))} />
         <Bar dataKey="mae" shape={<Lollipop />} isAnimationActive={false} />
       </BarChart>
     </ChartContainer>
@@ -63,14 +64,14 @@ export function DailyErrorLollipops({ data }: { data: { date: string; mae: numbe
 
 /** Rolling error trend with no axes. The surrounding tile states the latest value and unit. */
 export function MaeSparkline({ data }: { data: { date: string; model: number }[] }) {
-  const config = { model: { label: "Rolling MAE", color: "var(--accent-foreground)" } } satisfies ChartConfig;
+  const config = { model: { label: t("Rolling MAE"), color: "var(--accent-foreground)" } } satisfies ChartConfig;
   return (
-    <ChartContainer config={config} className="aspect-auto h-20 w-full">
+    <ChartContainer config={config} className="entrance-reveal-x aspect-auto h-20 w-full">
       <LineChart accessibilityLayer data={data} margin={{ left: 2, right: 2, top: 6, bottom: 2 }}>
         <XAxis dataKey="date" hide />
         {/* A sparkline shows shape, so its range fits the data. The tile states the actual value. */}
         <YAxis hide domain={["dataMin", "dataMax"]} />
-        <ChartTooltip content={unitTooltip("var(--color-model)", "Rolling MAE")} />
+        <ChartTooltip content={unitTooltip("var(--color-model)", t("Rolling MAE"))} />
         <Line dataKey="model" type="monotone" stroke="var(--color-model)" strokeWidth={2} dot={false} isAnimationActive={false} />
       </LineChart>
     </ChartContainer>

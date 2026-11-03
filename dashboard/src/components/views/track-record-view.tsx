@@ -1,6 +1,7 @@
 "use client";
 
-import { CalendarDays, FlaskConical } from "lucide-react";
+import { CalendarDays, Info } from "lucide-react";
+import { de } from "react-day-picker/locale";
 import { useMemo, useState } from "react";
 import type { DateRange } from "react-day-picker";
 
@@ -15,7 +16,6 @@ import {
   StaleBanner,
 } from "@/components/page-states";
 import { StatCard } from "@/components/stat-card";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -29,11 +29,13 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
-import { fmt, MODEL_LABELS } from "@/lib/labels";
+import { getLang, t } from "@/lib/i18n";
+import { fmt, modelLabel } from "@/lib/labels";
 import { dailySummary, rollingMae } from "@/lib/stats";
 import { addDays, berlinDate, dateTimeLabel, hourLabel, parseUtc, shortDateLabel } from "@/lib/time";
 import type { TrackRecordFile } from "@/lib/types";
 import { useData } from "@/lib/use-data";
+import { useEntranceWindow } from "@/lib/use-entrance";
 
 const HOURLY_LIMIT_DAYS = 14;
 const ROLLING_DAYS = 7;
@@ -47,9 +49,7 @@ function toIso(d: Date): string {
 function Shell({ children }: { children: React.ReactNode }) {
   return (
     <div className="space-y-4">
-      <PageHeader title="Track record">
-        Forecasts scored against published prices. Live and backtest results are kept separate.
-      </PageHeader>
+      <PageHeader title={t("Track record")} />
       {children}
     </div>
   );
@@ -59,6 +59,7 @@ export function TrackRecordView() {
   const live = useData<TrackRecordFile>("track_record.json");
   const backtest = useData<TrackRecordFile>("backtest_track.json");
   const [chosen, setChosen] = useState<"live" | "backtest" | null>(null);
+  useEntranceWindow(live.status !== "loading" && backtest.status !== "loading");
 
   if (live.status === "loading" || backtest.status === "loading") {
     return <Shell><LoadingState /></Shell>;
@@ -69,9 +70,8 @@ export function TrackRecordView() {
     if (live.status === "error") return <Shell><ErrorState message={live.message} /></Shell>;
     return (
       <Shell>
-        <EmptyState title="No live forecasts have been scored yet">
-          A forecast is scored once its actual prices are published, about a day after it is made.
-          Until then, the Model page has the backtest results.
+        <EmptyState title={t("No live forecasts have been scored yet")}>
+          {t("A forecast is scored once its actual prices are published, about a day after it is made. Until then, the Model page has the backtest results.")}
         </EmptyState>
       </Shell>
     );
@@ -81,31 +81,43 @@ export function TrackRecordView() {
   const shown = data ?? (backtest.status === "ready" ? backtest.data : null);
   return (
     <Shell>
-      <ToggleGroup
-        type="single"
-        variant="outline"
-        value={source}
-        onValueChange={(v) => v && setChosen(v as "live" | "backtest")}
-        aria-label="Forecast source"
-      >
-        <ToggleGroupItem value="live" disabled={!hasLive}>
-          Live{hasLive ? "" : " (none yet)"}
-        </ToggleGroupItem>
-        <ToggleGroupItem value="backtest" disabled={!hasBacktest}>
-          Backtest
-        </ToggleGroupItem>
-      </ToggleGroup>
-      {source === "backtest" && (
-        <Alert className="border-chart-4">
-          <FlaskConical aria-hidden />
-          <AlertTitle>Backtest: simulated past forecasts, not live results</AlertTitle>
-          <AlertDescription>
-            Each month&apos;s forecasts came from a model trained only on earlier data. Actual prices are
-            real, but these forecasts were not published at the time.
-            {!hasLive && " Live forecasts will appear here once they have been scored."}
-          </AlertDescription>
-        </Alert>
-      )}
+      <div className="flex flex-wrap items-center gap-2">
+        <ToggleGroup
+          type="single"
+          variant="outline"
+          value={source}
+          onValueChange={(v) => v && setChosen(v as "live" | "backtest")}
+          aria-label={t("Forecast source")}
+        >
+          <ToggleGroupItem value="live" disabled={!hasLive}>
+            {hasLive ? t("Live") : t("Live (none yet)")}
+          </ToggleGroupItem>
+          <ToggleGroupItem value="backtest" disabled={!hasBacktest}>
+            {t("Backtest")}
+          </ToggleGroupItem>
+        </ToggleGroup>
+        {source === "backtest" && (
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button
+                variant="secondary"
+                size="icon"
+                className="size-9 bg-card"
+                aria-label={t("What the backtest results mean")}
+              >
+                <Info aria-hidden />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent align="start" className="w-80 space-y-1 text-sm">
+              <p className="font-medium">{t("Backtest: simulated past forecasts, not live results")}</p>
+              <p className="text-muted-foreground">
+                {t("Each month's forecasts came from a model trained only on earlier data. Actual prices are real, but these forecasts were not published at the time.")}
+                {!hasLive && ` ${t("Live forecasts will appear here once they have been scored.")}`}
+              </p>
+            </PopoverContent>
+          </Popover>
+        )}
+      </div>
       {shown && <Loaded key={source} data={shown} isBacktest={source === "backtest"} />}
     </Shell>
   );
@@ -162,8 +174,7 @@ function Loaded({ data, isBacktest }: { data: TrackRecordFile; isBacktest: boole
       {data.is_sample && <SampleBanner />}
       {!isBacktest && generatedDaysAgo > STALE_AFTER_DAYS && (
         <StaleBanner>
-          The scores were last updated on {dateTimeLabel(data.generated_at_utc)}. Scoring may have
-          stopped running.
+          {t("The scores were last updated on {date}. Scoring may have stopped running.", { date: dateTimeLabel(data.generated_at_utc) })}
         </StaleBanner>
       )}
 
@@ -173,23 +184,24 @@ function Loaded({ data, isBacktest }: { data: TrackRecordFile; isBacktest: boole
           variant="outline"
           value={preset}
           onValueChange={(v) => v && setPreset(v)}
-          aria-label="Date range"
+          aria-label={t("Date range")}
         >
-          <ToggleGroupItem value="7">7 days</ToggleGroupItem>
-          <ToggleGroupItem value="30">30 days</ToggleGroupItem>
-          <ToggleGroupItem value="90">90 days</ToggleGroupItem>
-          <ToggleGroupItem value="all">All</ToggleGroupItem>
+          <ToggleGroupItem value="7">{t("{n} days", { n: 7 })}</ToggleGroupItem>
+          <ToggleGroupItem value="30">{t("{n} days", { n: 30 })}</ToggleGroupItem>
+          <ToggleGroupItem value="90">{t("{n} days", { n: 90 })}</ToggleGroupItem>
+          <ToggleGroupItem value="all">{t("All")}</ToggleGroupItem>
         </ToggleGroup>
         <Popover>
           <PopoverTrigger asChild>
             <Button variant={preset === "custom" ? "secondary" : "outline"} size="sm">
               <CalendarDays aria-hidden />
-              {preset === "custom" && custom?.from ? `${shortDateLabel(from)} – ${shortDateLabel(to)}` : "Custom dates"}
+              {preset === "custom" && custom?.from ? `${shortDateLabel(from)} – ${shortDateLabel(to)}` : t("Custom dates")}
             </Button>
           </PopoverTrigger>
           <PopoverContent className="w-auto p-0" align="start">
             <Calendar
               mode="range"
+              locale={getLang() === "de" ? de : undefined}
               selected={custom}
               onSelect={(range) => {
                 setCustom(range);
@@ -205,26 +217,25 @@ function Loaded({ data, isBacktest }: { data: TrackRecordFile; isBacktest: boole
         </Popover>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-3">
-        <StatCard accent label={`${isBacktest ? "Backtest" : "Model"} MAE, ${daily.length} days`} value={fmt(rangeMae)} unit="EUR/MWh" />
-        <StatCard label={MODEL_LABELS.baseline_prev_day} value={fmt(baselineMae("baseline_prev_day"))} unit="EUR/MWh" />
-        <StatCard label={MODEL_LABELS.baseline_prev_week} value={fmt(baselineMae("baseline_prev_week"))} unit="EUR/MWh" />
+      <div className="entrance grid gap-4 sm:grid-cols-3">
+        <StatCard accent label={t(isBacktest ? "Backtest MAE, {n} days" : "Model MAE, {n} days", { n: daily.length })} value={fmt(rangeMae)} unit="EUR/MWh" />
+        <StatCard label={modelLabel("baseline_prev_day")} value={fmt(baselineMae("baseline_prev_day"))} unit="EUR/MWh" />
+        <StatCard label={modelLabel("baseline_prev_week")} value={fmt(baselineMae("baseline_prev_week"))} unit="EUR/MWh" />
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle>Forecast vs. actual price</CardTitle>
+          <CardTitle>{t("Forecast vs. actual price")}</CardTitle>
           <CardDescription>
-            EUR/MWh, {hourly ? "by hour" : "daily averages"}, {shortDateLabel(from)} to{" "}
-            {shortDateLabel(to)}. Times are Europe/Berlin.
+            {t(hourly ? "EUR/MWh, by hour, {from} to {to}. Times are Europe/Berlin." : "EUR/MWh, daily averages, {from} to {to}. Times are Europe/Berlin.", { from: shortDateLabel(from), to: shortDateLabel(to) })}
           </CardDescription>
         </CardHeader>
         <CardContent>
           {daily.length === 0 ? (
-            <EmptyState title="Nothing in this range">Pick a range with scored forecasts.</EmptyState>
+            <EmptyState title={t("Nothing in this range")}>{t("Pick a range with scored forecasts.")}</EmptyState>
           ) : (
             <ChartOrTable
-              label="Forecast versus actual price"
+              label={t("Forecast vs. actual price")}
               chart={
                 <SeriesLineChart
                   data={chartData}
@@ -237,8 +248,8 @@ function Loaded({ data, isBacktest }: { data: TrackRecordFile; isBacktest: boole
                   }
                   minTickGap={48}
                   series={[
-                    { key: "forecast", label: "Forecast (P50)", color: "var(--chart-1)" },
-                    { key: "actual", label: "Actual", color: "var(--chart-2)", dashed: true },
+                    { key: "forecast", label: t("Forecast (P50)"), color: "var(--chart-1)" },
+                    { key: "actual", label: t("Actual"), color: "var(--chart-2)", dashed: true },
                   ]}
                 />
               }
@@ -246,9 +257,9 @@ function Loaded({ data, isBacktest }: { data: TrackRecordFile; isBacktest: boole
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Delivery date</TableHead>
-                      <TableHead className="text-right">Actual avg.</TableHead>
-                      <TableHead className="text-right">Forecast avg.</TableHead>
+                      <TableHead>{t("Delivery date")}</TableHead>
+                      <TableHead className="text-right">{t("Actual avg.")}</TableHead>
+                      <TableHead className="text-right">{t("Forecast avg.")}</TableHead>
                       <TableHead className="text-right">MAE</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -268,8 +279,7 @@ function Loaded({ data, isBacktest }: { data: TrackRecordFile; isBacktest: boole
           )}
           {rangeMae !== null && (
             <p className="mt-3 text-sm text-muted-foreground">
-              Over these {daily.length} days, the model&apos;s hourly forecasts missed by{" "}
-              {fmt(rangeMae)} EUR/MWh on average.
+              {t("Over these {n} days, the model's hourly forecasts missed by {mae} EUR/MWh on average.", { n: daily.length, mae: fmt(rangeMae) })}
             </p>
           )}
         </CardContent>
@@ -277,17 +287,17 @@ function Loaded({ data, isBacktest }: { data: TrackRecordFile; isBacktest: boole
 
       <Card>
         <CardHeader>
-          <CardTitle>Rolling {ROLLING_DAYS}-day MAE</CardTitle>
-          <CardDescription>EUR/MWh. Lower is better. A point needs {ROLLING_DAYS} scored days.</CardDescription>
+          <CardTitle>{t("Rolling {n}-day MAE", { n: ROLLING_DAYS })}</CardTitle>
+          <CardDescription>{t("EUR/MWh. Lower is better. A point needs {n} scored days.", { n: ROLLING_DAYS })}</CardDescription>
         </CardHeader>
         <CardContent>
           {rolling.length === 0 ? (
-            <EmptyState title="Not enough history">
-              This chart starts once {ROLLING_DAYS} consecutive days have been scored.
+            <EmptyState title={t("Not enough history")}>
+              {t("This chart starts once {n} consecutive days have been scored.", { n: ROLLING_DAYS })}
             </EmptyState>
           ) : (
             <ChartOrTable
-              label={`Rolling ${ROLLING_DAYS}-day MAE`}
+              label={t("Rolling {n}-day MAE", { n: ROLLING_DAYS })}
               chart={
                 <SeriesLineChart
                   data={rolling.map((p) => ({ ...p }))}
@@ -295,9 +305,9 @@ function Loaded({ data, isBacktest }: { data: TrackRecordFile; isBacktest: boole
                   unit="EUR/MWh"
                   tickFormatter={shortDateLabel}
                   series={[
-                    { key: "model", label: MODEL_LABELS.model, color: "var(--chart-1)" },
-                    { key: "baseline_prev_day", label: MODEL_LABELS.baseline_prev_day, color: "var(--chart-3)", dashed: true },
-                    { key: "baseline_prev_week", label: MODEL_LABELS.baseline_prev_week, color: "var(--chart-4)", dashed: true },
+                    { key: "model", label: modelLabel("model"), color: "var(--chart-1)" },
+                    { key: "baseline_prev_day", label: modelLabel("baseline_prev_day"), color: "var(--chart-3)", dashed: true },
+                    { key: "baseline_prev_week", label: modelLabel("baseline_prev_week"), color: "var(--chart-4)", dashed: true },
                   ]}
                 />
               }
@@ -305,10 +315,10 @@ function Loaded({ data, isBacktest }: { data: TrackRecordFile; isBacktest: boole
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Date</TableHead>
-                      <TableHead className="text-right">{MODEL_LABELS.model}</TableHead>
-                      <TableHead className="text-right">{MODEL_LABELS.baseline_prev_day}</TableHead>
-                      <TableHead className="text-right">{MODEL_LABELS.baseline_prev_week}</TableHead>
+                      <TableHead>{t("Date")}</TableHead>
+                      <TableHead className="text-right">{modelLabel("model")}</TableHead>
+                      <TableHead className="text-right">{modelLabel("baseline_prev_day")}</TableHead>
+                      <TableHead className="text-right">{modelLabel("baseline_prev_week")}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>

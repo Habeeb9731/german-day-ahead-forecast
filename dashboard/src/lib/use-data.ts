@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { t } from "./i18n";
 
 export type DataState<T> =
   | { status: "loading" }
@@ -17,7 +18,7 @@ export function useData<T>(file: string): DataState<T> {
     fetch(`${base}/data/${file}`, { signal: controller.signal, cache: "no-store" })
       .then(async (response) => {
         if (response.status === 404) return setState({ status: "empty" });
-        if (!response.ok) throw new Error(`The server returned ${response.status}.`);
+        if (!response.ok) throw new Error(t("The server returned {status}.", { status: response.status }));
         setState({ status: "ready", data: (await response.json()) as T });
       })
       .catch((error: Error) => {

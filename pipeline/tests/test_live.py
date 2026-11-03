@@ -312,3 +312,29 @@ def test_backtest_track_is_separate_and_marked(tmp_path):
     assert first["forecast_generated_at_utc"] is None
     assert second["actual"] == -5.0
     assert not export.export_backtest_track(tmp_path / "none.parquet", "v1", out, WINDOW)
+
+
+def test_recent_backtest_file_keeps_only_the_last_days(tmp_path):
+    days = [date(2026, 1, 1) + timedelta(days=i) for i in range(100)]
+    predictions = pd.DataFrame(
+        {
+            "delivery_date": days,
+            "valid_from_utc": pd.to_datetime(days),
+            "y": 1.0,
+            "p10": 0.0,
+            "p50": 1.0,
+            "p90": 2.0,
+            "baseline_prev_day": 1.0,
+            "baseline_prev_week": 1.0,
+        }
+    )
+    source = tmp_path / "predictions.parquet"
+    predictions.to_parquet(source)
+    out = tmp_path / "out"
+    export.export_backtest_track(source, "v1", out, WINDOW)
+    recent = json.loads((out / "backtest_recent.json").read_text())
+    full = json.loads((out / "backtest_track.json").read_text())
+    assert len(full["hours"]) == 100
+    assert len(recent["hours"]) == export.RECENT_BACKTEST_DAYS
+    assert recent["hours"][-1] == full["hours"][-1]
+    assert recent["kind"] == "backtest_track_record"

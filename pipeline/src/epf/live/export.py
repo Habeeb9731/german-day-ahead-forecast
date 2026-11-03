@@ -14,6 +14,9 @@ import pandas as pd
 
 from epf.live import forecast_log
 
+# The home and EV pages only need recent history: a 7-day rolling chart of 60 days, plus a margin.
+RECENT_BACKTEST_DAYS = 70
+
 
 def _write(path: Path, payload: dict[str, Any]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -97,34 +100,42 @@ def export_backtest_track(predictions_path: Path, version: str, out: Path, now: 
     if not predictions_path.exists():
         return False
     df = pd.read_parquet(predictions_path).sort_values("valid_from_utc")
-    records = df.to_dict("records")
-    _write(
-        out / "backtest_track.json",
-        {
-            "kind": "backtest_track_record",
-            "is_sample": False,
-            "note": "Simulated walk-forward forecasts, not live forecasts.",
-            "generated_at_utc": now.isoformat(timespec="seconds"),
-            "hours": [
-                {
-                    "valid_from_utc": pd.Timestamp(r["valid_from_utc"]).isoformat(
-                        timespec="seconds"
-                    ),
-                    "delivery_date": pd.Timestamp(r["delivery_date"]).date().isoformat(),
-                    "p10": _number(r["p10"]),
-                    "p50": _number(r["p50"]),
-                    "p90": _number(r["p90"]),
-                    "actual": _number(r["y"]),
-                    "baseline_prev_day": _number(r["baseline_prev_day"]),
-                    "baseline_prev_week": _number(r["baseline_prev_week"]),
-                    "model_version": version,
-                    "forecast_generated_at_utc": None,
-                }
-                for r in records
-            ],
-        },
-    )
+    rows = _backtest_rows(df.to_dict("records"), version)
+    days = sorted({row["delivery_date"] for row in rows})
+    recent_from = days[-RECENT_BACKTEST_DAYS:][0] if days else ""
+    for name, hours in (
+        ("backtest_track.json", rows),
+        ("backtest_recent.json", [row for row in rows if row["delivery_date"] >= recent_from]),
+    ):
+        _write(
+            out / name,
+            {
+                "kind": "backtest_track_record",
+                "is_sample": False,
+                "note": "Simulated walk-forward forecasts, not live forecasts.",
+                "generated_at_utc": now.isoformat(timespec="seconds"),
+                "hours": hours,
+            },
+        )
     return True
+
+
+def _backtest_rows(records: list[Any], version: str) -> list[dict[str, Any]]:
+    return [
+        {
+            "valid_from_utc": pd.Timestamp(r["valid_from_utc"]).isoformat(timespec="seconds"),
+            "delivery_date": pd.Timestamp(r["delivery_date"]).date().isoformat(),
+            "p10": _number(r["p10"]),
+            "p50": _number(r["p50"]),
+            "p90": _number(r["p90"]),
+            "actual": _number(r["y"]),
+            "baseline_prev_day": _number(r["baseline_prev_day"]),
+            "baseline_prev_week": _number(r["baseline_prev_week"]),
+            "model_version": version,
+            "forecast_generated_at_utc": None,
+        }
+        for r in records
+    ]
 
 
 def clear_sample_data(out: Path) -> None:

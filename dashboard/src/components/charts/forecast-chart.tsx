@@ -14,13 +14,13 @@ import {
 import { fmt } from "@/lib/labels";
 import { hourLabel } from "@/lib/time";
 import type { ForecastHour } from "@/lib/types";
-
-const config = {
-  band: { label: "P10–P90 range", color: "var(--accent)" },
-  p50: { label: "Forecast (P50)", color: "var(--chart-1)" },
-} satisfies ChartConfig;
+import { t } from "@/lib/i18n";
 
 export function ForecastChart({ hours }: { hours: ForecastHour[] }) {
+  const config = {
+    band: { label: t("P10–P90 range"), color: "var(--accent)" },
+    p50: { label: t("Forecast (P50)"), color: "var(--chart-1)" },
+  } satisfies ChartConfig;
   const isDstDay = hours.length !== 24;
   const data = hours.map((h) => ({
     label: hourLabel(h.valid_from_utc, isDstDay),
@@ -43,10 +43,10 @@ export function ForecastChart({ hours }: { hours: ForecastHour[] }) {
                   <TooltipRow
                     color="var(--color-band)"
                     label="P10–P90"
-                    value={`${fmt(Number(value[0]))} to ${fmt(Number(value[1]))}`}
+                    value={t("{low} to {high}", { low: fmt(Number(value[0])), high: fmt(Number(value[1])) })}
                   />
                 ) : (
-                  <TooltipRow color="var(--color-p50)" label="Forecast (P50)" value={fmt(Number(value))} />
+                  <TooltipRow color="var(--color-p50)" label={t("Forecast (P50)")} value={fmt(Number(value))} />
                 )
               }
             />

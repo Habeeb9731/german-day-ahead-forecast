@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono, Outfit } from "next/font/google";
 import type { ReactNode } from "react";
 
+import { LanguageProvider } from "@/components/language-provider";
+import { SiteFooter, SkipLink } from "@/components/site-footer";
 import { SiteHeader } from "@/components/site-header";
 import { ThemeProvider } from "@/components/theme-provider";
 import "./globals.css";
@@ -11,7 +13,7 @@ const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"]
 const outfit = Outfit({ variable: "--font-outfit", subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: { default: "DE-LU day-ahead forecast", template: "%s | DE-LU day-ahead forecast" },
+  title: { default: "depower: German day-ahead price forecast", template: "%s | depower" },
   description: "Forecasts of German day-ahead electricity prices, with an honest track record.",
 };
 
@@ -24,28 +26,14 @@ export default function RootLayout({ children }: { children: ReactNode }) {
     >
       <body className="flex min-h-full flex-col overflow-x-clip bg-background text-foreground">
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
-          <a
-            href="#main"
-            className="sr-only rounded-md bg-background px-3 py-2 text-sm focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-50 focus:ring-2 focus:ring-ring"
-          >
-            Skip to content
-          </a>
-          <SiteHeader />
-          <main id="main" tabIndex={-1} className="w-full flex-1 px-4 pt-5 pb-4 outline-none lg:px-6">
-            {children}
-          </main>
-          <footer>
-            <div className="w-full space-y-1 px-4 py-4 text-xs text-muted-foreground lg:px-6">
-              <p>
-                Market data: Bundesnetzagentur | SMARD.de (CC BY 4.0). Weather data by{" "}
-                <a className="underline underline-offset-2" href="https://open-meteo.com/" rel="noreferrer" target="_blank">
-                  Open-Meteo.com
-                </a>{" "}
-                (CC BY 4.0). Data modified. See About.
-              </p>
-              <p>Wholesale prices, not retail tariffs. Not financial advice.</p>
-            </div>
-          </footer>
+          <LanguageProvider>
+            <SkipLink />
+            <SiteHeader />
+            <main id="main" tabIndex={-1} className="w-full flex-1 px-4 pt-5 pb-4 outline-none lg:px-6">
+              {children}
+            </main>
+            <SiteFooter />
+          </LanguageProvider>
         </ThemeProvider>
       </body>
     </html>

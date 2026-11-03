@@ -1,10 +1,15 @@
+import { getLang, intlLocale, t } from "./i18n";
 import type { ModelName } from "./types";
 
-export const MODEL_LABELS: Record<ModelName, string> = {
+const MODEL_LABELS: Record<ModelName, string> = {
   model: "Model (P50)",
   baseline_prev_day: "Same hour, previous day",
   baseline_prev_week: "Same hour, last week",
 };
+
+export function modelLabel(name: ModelName): string {
+  return t(MODEL_LABELS[name]);
+}
 
 const LOCATIONS: Record<string, string> = {
   north_sea_coast: "North Sea coast",
@@ -72,12 +77,12 @@ const EXACT: Record<string, string> = {
 
 /** Plain-language feature name. Unknown names fall back to the raw ID rather than a guess. */
 export function featureLabel(name: string): string {
-  if (EXACT[name]) return EXACT[name];
+  if (EXACT[name]) return t(EXACT[name]);
   if (name.startsWith("wx_")) {
     for (const [variable, label] of Object.entries(WEATHER)) {
       if (name.startsWith(`wx_${variable}_`)) {
         const location = name.slice(`wx_${variable}_`.length);
-        return `${label}, ${LOCATIONS[location] ?? location}`;
+        return `${t(label)}, ${LOCATIONS[location] ? t(LOCATIONS[location]) : location}`;
       }
     }
   }
@@ -86,27 +91,42 @@ export function featureLabel(name: string): string {
 
 /** Plain-language regime name. Thresholds embedded in the key come from the backtest report. */
 export function regimeLabel(key: string): string {
-  if (key === "all") return "All hours";
-  if (key === "negative_price") return "Negative prices";
-  if (key === "normal_middle90pct") return "Middle 90% of prices";
-  if (key === "dst_change_days") return "Daylight saving days";
+  if (key === "all") return t("All hours");
+  if (key === "negative_price") return t("Negative prices");
+  if (key === "normal_middle90pct") return t("Middle 90% of prices");
+  if (key === "dst_change_days") return t("Daylight saving days");
   const high = key.match(/^extreme_high_top5pct_ge_(-?[\d.]+)$/);
-  if (high) return `Highest 5% of prices (≥ ${high[1]} EUR/MWh)`;
+  if (high) return t("Highest 5% of prices (≥ {value} EUR/MWh)", { value: fmt(Number(high[1])) });
   const low = key.match(/^extreme_low_bottom5pct_le_(-?[\d.]+)$/);
-  if (low) return `Lowest 5% of prices (≤ ${low[1]} EUR/MWh)`;
+  if (low) return t("Lowest 5% of prices (≤ {value} EUR/MWh)", { value: fmt(Number(low[1])) });
   return key;
 }
 
 /** Euro amount with the sign before the symbol, such as −€0.17. */
 export function eur(value: number | null | undefined): string {
-  if (value === null || value === undefined || Number.isNaN(value)) return "n/a";
-  return `${value < 0 ? "−" : ""}€${fmt(Math.abs(value))}`;
+  if (value === null || value === undefined || Number.isNaN(value)) return t("n/a");
+  const sign = value < 0 ? "−" : "";
+  return getLang() === "de" ? `${sign}${fmt(Math.abs(value))} €` : `${sign}€${fmt(Math.abs(value))}`;
 }
 
 export function fmt(value: number | null | undefined, digits = 2): string {
-  if (value === null || value === undefined || Number.isNaN(value)) return "n/a";
-  return value.toLocaleString("en-GB", {
+  if (value === null || value === undefined || Number.isNaN(value)) return t("n/a");
+  return value.toLocaleString(intlLocale(), {
     minimumFractionDigits: digits,
     maximumFractionDigits: digits,
   });
 }
+
+/** A percentage in the local style: 77.9% in English, 77,9 % in German. */
+export function pct(value: number | null | undefined, digits = 1): string {
+  if (value === null || value === undefined || Number.isNaN(value)) return t("n/a");
+  return `${fmt(value, digits)}${getLang() === "de" ? "\u00a0%" : "%"}`;
+}
+
+/** Every label held in a table above, so the translation test can check them too. */
+export const LABEL_STRINGS = [
+  ...Object.values(MODEL_LABELS),
+  ...Object.values(LOCATIONS),
+  ...Object.values(WEATHER),
+  ...Object.values(EXACT),
+];

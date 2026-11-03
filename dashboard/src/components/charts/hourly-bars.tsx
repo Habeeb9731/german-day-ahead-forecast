@@ -2,6 +2,7 @@
 
 import { Bar, BarChart, CartesianGrid, ReferenceLine, XAxis, YAxis } from "recharts";
 
+import { BarGrow } from "@/components/charts/bar-grow";
 import { TooltipRow } from "@/components/charts/tooltip-row";
 import {
   type ChartConfig,
@@ -15,6 +16,7 @@ import { highlightBlock } from "@/lib/dashboard";
 import { fmt } from "@/lib/labels";
 import { hourLabel } from "@/lib/time";
 import type { ForecastHour } from "@/lib/types";
+import { t } from "@/lib/i18n";
 
 export function HourlyBars({
   hours,
@@ -26,8 +28,8 @@ export function HourlyBars({
   blockHours: number;
 }) {
   const config = {
-    price: { label: "Forecast (P50)", color: "var(--bar)" },
-    cheapest: { label: `Cheapest ${blockHours} hours`, color: "var(--accent)" },
+    price: { label: t("Forecast (P50)"), color: "var(--bar)" },
+    cheapest: { label: t("Cheapest {n} hours", { n: blockHours }), color: "var(--accent)" },
   } satisfies ChartConfig;
   const isDstDay = hours.length !== 24;
   const data = highlightBlock(hours, blockStartUtc, blockHours).map((row) => ({
@@ -56,7 +58,7 @@ export function HourlyBars({
                   <TooltipRow
                     color="transparent"
                     label="P10–P90"
-                    value={`${fmt(item.payload.p10)} to ${fmt(item.payload.p90)}`}
+                    value={t("{low} to {high}", { low: fmt(item.payload.p10), high: fmt(item.payload.p90) })}
                   />
                 </div>
               )}
@@ -64,8 +66,8 @@ export function HourlyBars({
           }
         />
         <ChartLegend content={<ChartLegendContent />} itemSorter={null} />
-        <Bar dataKey="price" stackId="p" fill="var(--color-price)" radius={6} isAnimationActive={false} />
-        <Bar dataKey="cheapest" stackId="p" fill="var(--color-cheapest)" radius={6} isAnimationActive={false} />
+        <Bar dataKey="price" stackId="p" fill="var(--color-price)" shape={<BarGrow />} isAnimationActive={false} />
+        <Bar dataKey="cheapest" stackId="p" fill="var(--color-cheapest)" shape={<BarGrow />} isAnimationActive={false} />
       </BarChart>
     </ChartContainer>
   );

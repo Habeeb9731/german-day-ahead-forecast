@@ -2,6 +2,7 @@
 
 import { Bar, BarChart, CartesianGrid, ReferenceLine, XAxis, YAxis } from "recharts";
 
+import { BarGrow } from "@/components/charts/bar-grow";
 import { TooltipRow } from "@/components/charts/tooltip-row";
 import {
   type ChartConfig,
@@ -12,11 +13,7 @@ import {
   ChartTooltipContent,
 } from "@/components/ui/chart";
 import { fmt } from "@/lib/labels";
-
-const config = {
-  charging: { label: "Charging", color: "var(--chart-1)" },
-  idle: { label: "Not charging", color: "var(--muted-foreground)" },
-} satisfies ChartConfig;
+import { t } from "@/lib/i18n";
 
 export interface EvBar {
   label: string;
@@ -25,6 +22,10 @@ export interface EvBar {
 }
 
 export function EvChart({ data }: { data: EvBar[] }) {
+  const config = {
+    charging: { label: t("Charging"), color: "var(--chart-1)" },
+    idle: { label: t("Not charging"), color: "var(--muted-foreground)" },
+  } satisfies ChartConfig;
   const hasNegative = data.some((d) => (d.charging ?? d.idle ?? 0) < 0);
   return (
     <ChartContainer config={config} className="aspect-auto h-64 w-full">
@@ -47,8 +48,8 @@ export function EvChart({ data }: { data: EvBar[] }) {
           }
         />
         <ChartLegend content={<ChartLegendContent />} itemSorter={null} />
-        <Bar dataKey="idle" stackId="price" fill="var(--color-idle)" fillOpacity={0.35} radius={2} isAnimationActive={false} />
-        <Bar dataKey="charging" stackId="price" fill="var(--color-charging)" radius={2} isAnimationActive={false} />
+        <Bar dataKey="idle" stackId="price" fill="var(--color-idle)" fillOpacity={0.35} shape={<BarGrow radius={2} />} isAnimationActive={false} />
+        <Bar dataKey="charging" stackId="price" fill="var(--color-charging)" shape={<BarGrow radius={2} />} isAnimationActive={false} />
       </BarChart>
     </ChartContainer>
   );
