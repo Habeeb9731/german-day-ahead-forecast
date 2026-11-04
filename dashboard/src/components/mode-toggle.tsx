@@ -6,7 +6,7 @@ import { useTheme } from "next-themes";
 import { Button } from "@/components/ui/button";
 import { t } from "@/lib/i18n";
 
-/** One click switches between light and dark, starting from the visitor's system setting. The
+/** One click switches between light and dark, starting in light and remembering the choice. The
  * icon shows the theme a click switches to: a moon in light mode and a sun in dark mode. */
 export function ModeToggle() {
   const { resolvedTheme, setTheme } = useTheme();
