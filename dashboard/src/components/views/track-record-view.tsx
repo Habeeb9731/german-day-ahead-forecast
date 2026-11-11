@@ -135,7 +135,9 @@ function Loaded({ data, isBacktest }: { data: TrackRecordFile; isBacktest: boole
       return [toIso(custom.from), toIso(custom.to ?? custom.from)];
     }
     if (preset === "all" || preset === "custom") return [firstDate, lastDate];
-    return [addDays(lastDate, 1 - Number(preset)), lastDate];
+    // Never start before the first scored day, so the label matches the data shown.
+    const start = addDays(lastDate, 1 - Number(preset));
+    return [start < firstDate ? firstDate : start, lastDate];
   }, [preset, custom, firstDate, lastDate]);
 
   const inRange = useMemo(

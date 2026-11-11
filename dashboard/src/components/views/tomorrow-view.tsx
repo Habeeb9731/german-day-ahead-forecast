@@ -35,7 +35,7 @@ import { latestScoredDay, leastCertainHour, liveCoverage, negativeHours, recentD
 import { cheapestSchedule } from "@/lib/ev";
 import { t } from "@/lib/i18n";
 import { eur, featureLabel, fmt, modelLabel, pct } from "@/lib/labels";
-import { extremeBlocks, keyStats, rollingMae } from "@/lib/stats";
+import { dailySummary, extremeBlocks, keyStats, rollingMae } from "@/lib/stats";
 import {
   dateLabel,
   dateTimeLabel,
@@ -124,6 +124,8 @@ export function TomorrowView() {
   const latest = useMemo(() => latestScoredDay(recordHours), [recordHours]);
   const recent = useMemo(() => recentDays(recordHours, RECENT_DAYS), [recordHours]);
   const coverage = useMemo(() => liveCoverage(recordHours), [recordHours]);
+  // liveCoverage looks at up to 30 scored days; say how many there really are.
+  const coverageDays = useMemo(() => Math.min(30, dailySummary(recordHours).length), [recordHours]);
   const rolling = (rollingIsBacktest ? backtestRolling : liveRolling).slice(-60);
   const lastRolling = rolling[rolling.length - 1];
   const recordWord = recordIsBacktest ? t("Backtest") : t("Live");
@@ -571,7 +573,12 @@ export function TomorrowView() {
             {
               label: t("{source} coverage", { source: recordWord }),
               value: coverage === null ? t("n/a") : pct(coverage),
-              note: coverage === null ? t("Not scored yet") : t("Last 30 days, target 80%"),
+              note:
+                coverage === null
+                  ? t("Not scored yet")
+                  : coverageDays === 1
+                    ? t("Last day, target 80%")
+                    : t("Last {days} days, target 80%", { days: coverageDays }),
             },
             {
               label: t("Negative hours"),
