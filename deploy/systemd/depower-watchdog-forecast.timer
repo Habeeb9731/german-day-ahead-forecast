@@ -1,0 +1,12 @@
+[Unit]
+Description=Check that tomorrow's forecast is published
+
+[Timer]
+# UTC on purpose: 11:00 UTC is after the 11:30 Berlin cutoff in both winter and summer.
+OnCalendar=*-*-* 11:00:00 UTC
+Persistent=true
+AccuracySec=1min
+Unit=depower-watchdog@forecast.service
+
+[Install]
+WantedBy=timers.target

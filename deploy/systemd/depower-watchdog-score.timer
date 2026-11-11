@@ -1,0 +1,12 @@
+[Unit]
+Description=Check that yesterday's forecast was scored
+
+[Timer]
+# UTC on purpose: 20:45 UTC is after the 20:35 Berlin scoring run in winter and summer.
+OnCalendar=*-*-* 20:45:00 UTC
+Persistent=true
+AccuracySec=1min
+Unit=depower-watchdog@score.service
+
+[Install]
+WantedBy=timers.target

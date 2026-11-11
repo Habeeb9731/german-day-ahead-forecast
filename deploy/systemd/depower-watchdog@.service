@@ -1,0 +1,10 @@
+[Unit]
+Description=DE-LU watchdog: check the public site (%i)
+After=docker.service network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+EnvironmentFile=-/opt/depower/deploy/alert.env
+ExecStart=/opt/depower/deploy/run-job.sh watchdog %i
+TimeoutStartSec=10min

@@ -2,10 +2,10 @@
 # Runs one pipeline command on the server, pushes new forecast log entries, and alerts on failure.
 set -uo pipefail
 cd "${DEPOWER_DIR:-/opt/depower}" || exit 1
-job="$1"
+job="$*"  # e.g. "daily-forecast" or "watchdog forecast"
 retry_later=75  # the forecast isn't ready yet and a later timer will retry, so no alert
 
-output=$(docker compose -f deploy/compose.yaml --profile jobs run --rm pipeline epf "$job" 2>&1)
+output=$(docker compose -f deploy/compose.yaml --profile jobs run --rm pipeline epf "$@" 2>&1)
 status=$?
 printf '%s\n' "$output"
 detail=$(printf '%s\n' "$output" | tail -n 1 | cut -c1-400)

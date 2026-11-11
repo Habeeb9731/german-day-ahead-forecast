@@ -2,12 +2,9 @@
 # which also covers the server or tunnel being down.
 name: Watchdog
 
+# The scheduled checks now run on the server (deploy/systemd/depower-watchdog-*.timer); this
+# workflow stays for manual checks from outside the server.
 on:
-  schedule:
-    # Times are UTC. 11:00 is after the 11:30 Berlin cutoff in both winter and summer.
-    - cron: "0 11 * * *"
-    # 20:45 UTC is after the 20:35 Berlin scoring run in winter (19:35 UTC) and summer (18:35 UTC).
-    - cron: "45 20 * * *"
   workflow_dispatch:
     inputs:
       check:
