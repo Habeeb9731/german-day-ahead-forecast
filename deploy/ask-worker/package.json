@@ -1,0 +1,14 @@
+{
+  "name": "depower-ask",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "knowledge": "node scripts/build-knowledge.mjs",
+    "deploy": "cf deploy"
+  },
+  "devDependencies": {
+    "@cloudflare/vite-plugin": "^2.0.0-rc.0",
+    "cf": "^1.0.0-rc.0",
+    "vite": "^8.3.8"
+  }
+}

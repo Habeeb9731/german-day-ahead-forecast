@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono, Outfit } from "next/font/google";
 import type { ReactNode } from "react";
 
+import { AskDepower } from "@/components/ask-depower";
 import { LanguageProvider } from "@/components/language-provider";
 import { SiteFooter, SkipLink } from "@/components/site-footer";
 import { SiteHeader } from "@/components/site-header";
@@ -33,6 +34,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
               {children}
             </main>
             <SiteFooter />
+            <AskDepower />
           </LanguageProvider>
         </ThemeProvider>
       </body>

@@ -175,3 +175,69 @@ html[data-entered] :is(.entrance > *, .entrance-bar, .entrance-reveal-x, .entran
     animation: none;
   }
 }
+
+/* depower mascot (components/depower-bot.tsx) */
+.depower-bot {
+  filter: drop-shadow(0 10px 14px rgb(37 99 235 / 0.28)) drop-shadow(0 2px 3px rgb(30 58 138 / 0.2));
+  animation: db-float 3.4s ease-in-out infinite;
+}
+.depower-bot .db-head {
+  transform-box: view-box;
+  transform-origin: 60px 92px;
+  transition: transform 0.35s cubic-bezier(0.3, 1.4, 0.5, 1);
+}
+.depower-bot .db-eyes {
+  transform-box: fill-box;
+  transform-origin: center;
+  transition: transform 0.09s ease;
+}
+.depower-bot .db-eyes.is-blinking {
+  transform: scaleY(0.12);
+}
+.db-launcher:hover .depower-bot {
+  animation-play-state: paused;
+  transform: translateY(-3px) scale(1.04);
+  transition: transform 0.3s cubic-bezier(0.3, 1.6, 0.5, 1);
+}
+@keyframes db-float {
+  50% {
+    transform: translateY(-4px);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .depower-bot {
+    animation: none;
+  }
+}
+
+/* Entrance: hops up from below and lands with a little squash, then waves. */
+.db-launcher.is-entering {
+  animation: db-enter 0.9s cubic-bezier(0.25, 1, 0.35, 1) both;
+  transform-origin: 50% 100%;
+}
+@keyframes db-enter {
+  0% { transform: translateY(120%) scale(0.6, 0.6); opacity: 0; }
+  45% { transform: translateY(-14%) scale(0.92, 1.1); opacity: 1; }
+  68% { transform: translateY(0) scale(1.1, 0.88); }
+  84% { transform: translateY(-3%) scale(0.97, 1.03); }
+  100% { transform: none; }
+}
+.depower-bot .db-arm {
+  transform-box: view-box;
+  transform-origin: 84px 96px;
+}
+.depower-bot.is-waving .db-arm,
+.db-launcher:hover .depower-bot .db-arm {
+  animation: db-wave 1.5s ease-in-out;
+}
+@keyframes db-wave {
+  0%, 100% { transform: rotate(0deg); }
+  15% { transform: rotate(-138deg); }
+  30% { transform: rotate(-108deg); }
+  45% { transform: rotate(-142deg); }
+  60% { transform: rotate(-108deg); }
+  75% { transform: rotate(-138deg); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .db-launcher.is-entering, .depower-bot .db-arm { animation: none !important; }
+}
