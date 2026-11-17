@@ -36,7 +36,7 @@ const LIVE_API = "https://depower.abdulhabeeb.com/api/ask";
 
 type LinkId = "tomorrow" | "track_record" | "model" | "ev_charging" | "about" | "source_code" | "author";
 const LINKS: Record<LinkId, { label: () => string; href: string; icon: LucideIcon; external?: boolean }> = {
-  tomorrow: { label: () => t("Tomorrow"), href: "/", icon: CalendarClock },
+  tomorrow: { label: () => t("Price forecast"), href: "/", icon: CalendarClock },
   track_record: { label: () => t("Track record"), href: "/track-record/", icon: ChartLine },
   model: { label: () => t("Model"), href: "/model/", icon: BrainCircuit },
   ev_charging: { label: () => t("EV charging"), href: "/ev-charging/", icon: PlugZap },

@@ -201,6 +201,7 @@ export const DE: Record<string, string> = {
   "Plant outages, fuel price jumps and cross-border events aren't in its inputs.": "Kraftwerksausfälle, Brennstoffpreissprünge und grenzüberschreitende Ereignisse fließen nicht in seine Eingaben ein.",
   "Plugged in": "Angesteckt ab",
   "Price (ct/kWh)": "Preis (ct/kWh)",
+  "Price forecast": "Preisprognose",
   "Price, same hour 2 days ago": "Preis, gleiche Stunde vor 2 Tagen",
   "Price, same hour 2 weeks ago": "Preis, gleiche Stunde vor 2 Wochen",
   "Price, same hour last week": "Preis, gleiche Stunde letzte Woche",
