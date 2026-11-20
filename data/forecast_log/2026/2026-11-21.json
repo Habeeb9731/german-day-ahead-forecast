@@ -1,0 +1,12 @@
+{
+ "kind": "live_forecast",
+ "delivery_date": "2026-11-21",
+ "status": "missed",
+ "generated_at_utc": "2026-11-20T10:35:17",
+ "cutoff_utc": "2026-11-20T10:30:00",
+ "model_version": null,
+ "input_hash": null,
+ "reason": "quality checks failed: data ends at 2026-11-19 22:00:00, expected through delivery date 2026-11-20; data ends at 2026-11-19 22:45:00, expected through delivery date 2026-11-20",
+ "previous_entry_sha256": "9a7717c62c7721869cec67e425cb04ff1278b22508bd56d1cc3a574d9c2d2ef9",
+ "hours": []
+}
