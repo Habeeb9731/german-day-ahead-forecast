@@ -1,0 +1,12 @@
+{
+ "kind": "live_forecast",
+ "delivery_date": "2026-11-27",
+ "status": "missed",
+ "generated_at_utc": "2026-11-26T10:35:20",
+ "cutoff_utc": "2026-11-26T10:30:00",
+ "model_version": null,
+ "input_hash": null,
+ "reason": "quality checks failed: 24 missing intervals, first: 2026-11-20 23:00, 2026-11-21 00:00, 2026-11-21 01:00, 2026-11-21 02:00, 2026-11-21 03:00; 96 missing intervals, first: 2026-11-20 23:00, 2026-11-20 23:15, 2026-11-20 23:30, 2026-11-20 23:45, 2026-11-21 00:00",
+ "previous_entry_sha256": "58a9ff3699b7b8aabd6d0caa2947b5ce2eae46cf381230d4d066bbade9fad670",
+ "hours": []
+}
