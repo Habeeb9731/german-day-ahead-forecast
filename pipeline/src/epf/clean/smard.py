@@ -17,6 +17,7 @@ from epf.config import (
     RULE_RES_FORECAST,
     Series,
 )
+from epf.ingest import energycharts
 from epf.ingest.raw import decode
 from epf.ingest.smard import parse_chunk
 from epf.timeutil import rule_day_before
@@ -82,8 +83,56 @@ def _collect(
     return merged, conflicts
 
 
+def _fallback_prices(con: duckdb.DuckDBPyConnection, series: Series) -> dict[datetime, _Point]:
+    """Energy-Charts prices at this series' resolution; the latest vintage of each value wins.
+
+    Hourly values are the mean of the hour's four quarters, rounded to cents as SMARD does,
+    and only for hours with all four quarters present.
+    """
+    rows = con.execute(
+        """SELECT id, fetched_at_utc, body_gz FROM raw_response
+           WHERE request_key LIKE ? ORDER BY fetched_at_utc, id""",
+        [f"{energycharts.KEY_PREFIX}%"],
+    ).fetchall()
+    quarters: dict[datetime, _Point] = {}
+    for raw_id, fetched_at, body in rows:
+        for valid, value in energycharts.parse(decode(body)):
+            if value is None:
+                continue
+            existing = quarters.get(valid)
+            if existing is None:
+                quarters[valid] = _Point(value, raw_id, fetched_at, 0)
+            elif existing.value != value:
+                existing.value, existing.raw_id = value, raw_id
+                existing.revisions += 1
+    if series.resolution != "hour":
+        return quarters
+    hours: dict[datetime, list[_Point]] = {}
+    for valid, point in quarters.items():
+        hours.setdefault(valid.replace(minute=0), []).append(point)
+    return {
+        hour: _Point(
+            round(sum(p.value for p in pts) / 4, 2),
+            max(p.raw_id for p in pts),
+            max(p.first_seen for p in pts),
+            max(p.revisions for p in pts),
+        )
+        for hour, pts in hours.items()
+        if len(pts) == 4
+    }
+
+
 def build_series(con: duckdb.DuckDBPyConnection, series: Series) -> int:
     merged, conflicts = _collect(con, series)
+    filled = 0
+    if series.kind == "da_price":
+        start_15 = datetime.fromisoformat(PRICE_15MIN_START_UTC)
+        for valid, point in _fallback_prices(con, series).items():
+            if valid >= start_15 and valid not in merged:
+                merged[valid] = point
+                filled += 1
+        if filled:
+            log.info("%s: %d values filled from Energy-Charts", series.series_id, filled)
     interval = 60 if series.resolution == "hour" else 15
     df = pd.DataFrame(
         [

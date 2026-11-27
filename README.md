@@ -145,6 +145,14 @@ Filter 411 is not listed in the community spec. Its identity is inferred from it
 
 **Licence and attribution:** SMARD's data is licensed under CC BY 4.0, credited as "Bundesnetzagentur | SMARD.de". However, [its terms](https://www.smard.de/en/datennutzung) currently say wholesale price data should not be reused until further notice, while licensing is reviewed under the HEDWIG proceedings. This project publishes those prices with attribution as a deliberate decision by its owner, knowing that notice. If you reuse this project, check the current terms yourself. Raw market data is not stored in this repository.
 
+### Energy-Charts (Fraunhofer ISE), price fallback only
+
+- **Why:** SMARD sometimes publishes a delivery day with every price null and never fills it. On 21 November 2026 all 24 hourly and 96 quarter-hour prices stayed empty, and the quality checks blocked every forecast from 20 November until this fallback was added.
+- **Endpoint:** `https://api.energy-charts.info/price?bzn=DE-LU&start=…&end=…`, one request per Berlin delivery day. No API key is needed.
+- **How it is used:** only for 15-minute-era days within the last 21 days where SMARD's quarter-hour prices are incomplete. Responses are stored raw like SMARD's. Cleaning uses them only for timestamps SMARD has no value for, so SMARD's values always win. Hourly values are the mean of the four quarters, rounded to cents, and only for hours with all four. Each filled value links to its Energy-Charts raw response.
+- **Checked:** on 22 November 2026 its 15-minute prices matched SMARD's exactly, and SMARD's hourly price matched the mean of the quarters to within 0.005 EUR/MWh.
+- **Licence:** CC BY 4.0, from "Bundesnetzagentur | SMARD.de", so the SMARD notice above applies to these prices too.
+
 ### Open-Meteo
 
 - **Endpoint:** Single Runs API, `https://single-runs-api.open-meteo.com/v1/forecast`, with `models=ecmwf_ifs` and a required `run` time. History starts on 14 March 2024.

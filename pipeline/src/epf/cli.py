@@ -29,7 +29,7 @@ from epf.config import (
 from epf.db import connect
 from epf.features.asof import DataStore
 from epf.features.build import build_range, feature_columns
-from epf.ingest import availability, holidays_de, openmeteo, smard
+from epf.ingest import availability, energycharts, holidays_de, openmeteo, smard
 from epf.ingest.http import make_client
 from epf.live import daily, export, forecast_log, score, watchdog
 from epf.models import artifact, backtest
@@ -196,9 +196,14 @@ def _ingest_recent(con: duckdb.DuckDBPyConnection, now: datetime) -> None:
             smard.ingest_series(con, client, series, _day(default))
         midnight = now.replace(hour=0, minute=0, second=0, microsecond=0)
         openmeteo.backfill(con, client, midnight - timedelta(days=3), midnight, spacing=1.0)
+        for series in SERIES:
+            build_series(con, series)
+        # Days SMARD left empty are filled from Energy-Charts, then the price series rebuilt.
+        if energycharts.fill_gaps(con, client, now):
+            for series in SERIES:
+                if series.kind == "da_price":
+                    build_series(con, series)
     holidays_de.ingest(con, range(2018, now.year + 2))
-    for series in SERIES:
-        build_series(con, series)
     build_weather(con)
 
 
